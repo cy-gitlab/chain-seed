@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chain-seed"
+version = "0.1.0a0"
+description = "Blockchain protocol extensions, images, tools, and experiments for SeedEmu"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE.txt"}
+authors = [
+  {name = "SEED Labs"}
+]
+dependencies = [
+  "seedemu>=0.0.7",
+  "eth-account==0.5.9",
+  "requests>=2.22",
+  "web3==5.31.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2",
+  "pytest>=8",
+]
+fidelity = [
+  "duckdb>=1.0",
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "pyarrow>=14",
+]
+
+[project.entry-points."seedemu.extensions"]
+chainseed = "chainseed.extension:descriptor"
+
+[tool.setuptools]
+include-package-data = true
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"chainseed.ethereum.EthTemplates" = [
+  "files_ethereum/*",
+  "files_faucet/*",
+  "files_utility/*",
+]
+"chainseed.chainlink.ChainlinkTemplates" = [
+  "contracts/*",
+  "contracts/fig/*",
+  "files/*",
+  "files/contract/*",
+  "files_user/*",
+  "jobs/*",
+  "library/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+

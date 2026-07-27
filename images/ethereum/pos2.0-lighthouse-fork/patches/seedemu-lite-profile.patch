@@ -1,0 +1,170 @@
+diff --git a/beacon_node/src/config.rs b/beacon_node/src/config.rs
+index 2e5a045..0bb254e 100644
+--- a/beacon_node/src/config.rs
++++ b/beacon_node/src/config.rs
+@@ -24,7 +24,7 @@ use std::fs;
+ use std::io::{IsTerminal, Read};
+ use std::net::Ipv6Addr;
+ use std::net::{IpAddr, Ipv4Addr, ToSocketAddrs};
+-use std::num::NonZeroU16;
++use std::num::{NonZeroU16, NonZeroUsize};
+ use std::path::{Path, PathBuf};
+ use std::str::FromStr;
+ use std::time::Duration;
+@@ -34,6 +34,74 @@ use types::{Checkpoint, Epoch, EthSpec, Hash256};
+ 
+ const PURGE_DB_CONFIRMATION: &str = "confirm";
+ 
++const SEEDEMU_LIGHTHOUSE_PROFILE_ENV: &str = "SEED_EMU_LIGHTHOUSE_PROFILE";
++const SEEDEMU_LITE_MAX_STATE_CACHE_SIZE: usize = 4;
++const SEEDEMU_LITE_MAX_HDIFF_BUFFER_CACHE_SIZE: usize = 1;
++const SEEDEMU_LITE_MAX_SHUFFLING_CACHE_SIZE: usize = 1;
++const SEEDEMU_LITE_MAX_BEACON_PROCESSOR_WORKERS: usize = 2;
++const SEEDEMU_LITE_MAX_WORK_QUEUE_LEN: usize = 2048;
++const SEEDEMU_LITE_MAX_REPROCESS_QUEUE_LEN: usize = 1024;
++const SEEDEMU_LITE_MAX_GOSSIP_BATCH_SIZE: usize = 16;
++
++fn seedemu_lite_profile_enabled() -> bool {
++    std::env::var(SEEDEMU_LIGHTHOUSE_PROFILE_ENV)
++        .map(|value| {
++            matches!(
++                value.to_ascii_lowercase().as_str(),
++                "1" | "true" | "yes" | "lite" | "low-memory" | "seedemu-lite"
++            )
++        })
++        .unwrap_or(false)
++}
++
++fn cap_non_zero_usize(value: NonZeroUsize, cap: usize) -> NonZeroUsize {
++    NonZeroUsize::new(value.get().min(cap).max(1)).expect("cap must produce non-zero usize")
++}
++
++fn apply_seedemu_lite_profile(config: &mut ClientConfig) {
++    config.store.block_cache_size = config.store.block_cache_size.min(1);
++    config.store.state_cache_size =
++        cap_non_zero_usize(config.store.state_cache_size, SEEDEMU_LITE_MAX_STATE_CACHE_SIZE);
++    config.store.state_cache_headroom = cap_non_zero_usize(config.store.state_cache_headroom, 1);
++    config.store.historic_state_cache_size =
++        cap_non_zero_usize(config.store.historic_state_cache_size, 1);
++    config.store.cold_hdiff_buffer_cache_size = cap_non_zero_usize(
++        config.store.cold_hdiff_buffer_cache_size,
++        SEEDEMU_LITE_MAX_HDIFF_BUFFER_CACHE_SIZE,
++    );
++    config.store.hot_hdiff_buffer_cache_size = cap_non_zero_usize(
++        config.store.hot_hdiff_buffer_cache_size,
++        SEEDEMU_LITE_MAX_HDIFF_BUFFER_CACHE_SIZE,
++    );
++    config.chain.shuffling_cache_size = config
++        .chain
++        .shuffling_cache_size
++        .min(SEEDEMU_LITE_MAX_SHUFFLING_CACHE_SIZE);
++    config.chain.enable_light_client_server = false;
++    config.beacon_processor.max_workers = config
++        .beacon_processor
++        .max_workers
++        .min(SEEDEMU_LITE_MAX_BEACON_PROCESSOR_WORKERS)
++        .max(1);
++    config.beacon_processor.max_work_event_queue_len = config
++        .beacon_processor
++        .max_work_event_queue_len
++        .min(SEEDEMU_LITE_MAX_WORK_QUEUE_LEN);
++    config.beacon_processor.max_scheduled_work_queue_len = config
++        .beacon_processor
++        .max_scheduled_work_queue_len
++        .min(SEEDEMU_LITE_MAX_REPROCESS_QUEUE_LEN);
++    config.beacon_processor.max_gossip_attestation_batch_size = config
++        .beacon_processor
++        .max_gossip_attestation_batch_size
++        .min(SEEDEMU_LITE_MAX_GOSSIP_BATCH_SIZE);
++    config.beacon_processor.max_gossip_aggregate_batch_size = config
++        .beacon_processor
++        .max_gossip_aggregate_batch_size
++        .min(SEEDEMU_LITE_MAX_GOSSIP_BATCH_SIZE);
++    info!("Applied SEED emulator Lighthouse low-memory profile");
++}
++
+ /// Gets the fully-initialized global client.
+ ///
+ /// The top-level `clap` arguments should be provided as `cli_args`.
+@@ -886,6 +954,10 @@ pub fn get_config<E: EthSpec>(
+         client_config.chain.invalid_block_roots = HashSet::from([*INVALID_HOLESKY_BLOCK_ROOT]);
+     }
+ 
++    if seedemu_lite_profile_enabled() {
++        apply_seedemu_lite_profile(&mut client_config);
++    }
++
+     Ok(client_config)
+ }
+ 
+@@ -1441,6 +1513,11 @@ pub fn set_network_config(
+     // Light client server config.
+     config.enable_light_client_server = !parse_flag(cli_args, "disable-light-client-server");
+ 
++    if seedemu_lite_profile_enabled() {
++        config.disable_quic_support = true;
++        config.enable_light_client_server = false;
++    }
++
+     // The self limiter is enabled by default. If the `self-limiter-protocols` flag is not provided,
+     // the default params will be used.
+     config.outbound_rate_limiter_config = if parse_flag(cli_args, "disable-self-limiter") {
+diff --git a/common/task_executor/src/rayon_pool_provider.rs b/common/task_executor/src/rayon_pool_provider.rs
+index ea8c988..3f6d7a8 100644
+--- a/common/task_executor/src/rayon_pool_provider.rs
++++ b/common/task_executor/src/rayon_pool_provider.rs
+@@ -20,10 +20,37 @@ pub struct RayonPoolProvider {
+     high_priority_thread_pool: Arc<ThreadPool>,
+ }
+ 
++fn seedemu_rayon_thread_cap() -> Option<usize> {
++    if let Ok(raw) = std::env::var("SEED_EMU_LIGHTHOUSE_RAYON_THREADS") {
++        if let Ok(value) = raw.parse::<usize>() {
++            if value > 0 {
++                return Some(value);
++            }
++        }
++    }
++    std::env::var("SEED_EMU_LIGHTHOUSE_PROFILE")
++        .ok()
++        .and_then(|value| {
++            if matches!(
++                value.to_ascii_lowercase().as_str(),
++                "1" | "true" | "yes" | "lite" | "low-memory" | "seedemu-lite"
++            ) {
++                Some(2)
++            } else {
++                None
++            }
++        })
++}
++
+ impl Default for RayonPoolProvider {
+     fn default() -> Self {
+-        let low_prio_threads =
+-            (num_cpus::get() * DEFAULT_LOW_PRIORITY_CPU_PERCENTAGE / 100).max(MINIMUM_THREAD_COUNT);
++        let thread_cap = seedemu_rayon_thread_cap();
++        let low_prio_threads = thread_cap
++            .map(|cap| cap.max(MINIMUM_THREAD_COUNT))
++            .unwrap_or_else(|| {
++                (num_cpus::get() * DEFAULT_LOW_PRIORITY_CPU_PERCENTAGE / 100)
++                    .max(MINIMUM_THREAD_COUNT)
++            });
+         let low_priority_thread_pool = Arc::new(
+             ThreadPoolBuilder::new()
+                 .num_threads(low_prio_threads)
+@@ -31,8 +58,12 @@ impl Default for RayonPoolProvider {
+                 .expect("failed to build low-priority rayon pool"),
+         );
+ 
+-        let high_prio_threads = (num_cpus::get() * DEFAULT_HIGH_PRIORITY_CPU_PERCENTAGE / 100)
+-            .max(MINIMUM_THREAD_COUNT);
++        let high_prio_threads = thread_cap
++            .map(|cap| cap.max(MINIMUM_THREAD_COUNT))
++            .unwrap_or_else(|| {
++                (num_cpus::get() * DEFAULT_HIGH_PRIORITY_CPU_PERCENTAGE / 100)
++                    .max(MINIMUM_THREAD_COUNT)
++            });
+         let high_priority_thread_pool = Arc::new(
+             ThreadPoolBuilder::new()
+                 .num_threads(high_prio_threads)

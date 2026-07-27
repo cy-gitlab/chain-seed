@@ -1,0 +1,6 @@
+datasets/
+multiday_models/
+.venv/
+.matplotlib-cache/
+__pycache__/
+*.pyc

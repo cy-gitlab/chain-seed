@@ -1,0 +1,199 @@
+# ChainSeed Direct-cut Migration
+
+[中文](migration.zh-CN.md) | English
+
+## Source Mapping
+
+| Current source | New owner |
+|---|---|
+| `seedemu/services/EthereumService` | `src/chainseed/ethereum` |
+| `seedemu/services/MoneroService` | `src/chainseed/monero` |
+| `seedemu/services/SolanaService` | `src/chainseed/solana` |
+| `seedemu/services/ChainlinkService` | `src/chainseed/chainlink` |
+| `seedemu/testing/blockchain.py` | `src/chainseed/testing` |
+| `docker_images/seedemu-ethereum` | `images/ethereum` |
+| `docker_images/seedemu-ethexplorer` | `images/ethexplorer` |
+| `docker_images/seedemu-monero` | `images/monero` |
+| `docker_images/seedemu-solana` | `images/solana` |
+| `docker_images/seedemu-chainlink` | `images/chainlink` |
+| `tools/Blockchain` | `tools` |
+| `examples/blockchain` | `examples` and `experiments` |
+| `tests/ethereum`, `tests/monero`, `tests/solana`, `tests/chainlink` | `tests` |
+| Blockchain developer documentation | `docs` |
+| Blockchain-only Python dependencies | ChainSeed dependency groups |
+
+All blockchain tests move to ChainSeed. SeedEmu retains no ChainSeed fixture,
+import, checkout step, or blockchain-specific compatibility job.
+
+## Work Packages
+
+### 1. Freeze the Boundary
+
+1. Record the source commit used for extraction.
+2. Inventory Python imports, image names, labels, generated artifacts, tests,
+   documentation, and external datasets.
+3. Define extension API version 1 and the ChainSeed label schema.
+4. Stop adding blockchain features to `seed-emulator`.
+
+### 2. Prepare SeedEmu
+
+1. Publish the extension API used by `Layer`, `Service`, `Server`, and `Node`.
+2. Add compiler-neutral base-image references to the node model.
+3. Add extension descriptors and the versioned dump envelope.
+4. Keep generic runtime probes in `seedemu.testing`.
+5. Expose candidate revisions and stable extension API metadata for external
+   consumer testing.
+
+### 3. Build ChainSeed
+
+1. Move service code while preserving Git history.
+2. Replace wildcard and internal compiler imports with public API imports.
+3. Separate chain-independent helpers from chain-specific packages.
+4. Move image recipes, tools, tests, examples, and documentation.
+5. Convert D61 source, scripts, and runbooks into versioned experiments.
+6. Replace large generated data with external manifests.
+
+### 4. Coordinate the Direct Cut
+
+1. Prepare a SeedEmu release commit containing extension API version 1 and
+   removing the old blockchain tree.
+2. Prepare a ChainSeed release commit using that SeedEmu candidate and update
+   all blockchain examples to import `chainseed`.
+3. Build immutable ChainSeed images and run the joint compatibility matrix.
+4. Tag and publish the prepared SeedEmu release.
+5. Immediately publish the prepared ChainSeed package, images, and manifest
+   against that SeedEmu version.
+6. Run installation and runtime checks using only published artifacts.
+
+No aliases, forwarding modules, wrapper scripts, or deprecated import paths are
+introduced.
+
+## Dependency Cleanup
+
+`seedemu/services/__init__.py` and `seedemu/__init__.py` stop exporting
+blockchain classes. ChainSeed uses explicit imports from `seedemu.core` and
+other documented packages.
+
+Blockchain-only dependencies, including Ethereum account and RPC libraries,
+move from the SeedEmu development environment to scoped ChainSeed extras:
+
+```text
+chain-seed[ethereum]
+chain-seed[monero]
+chain-seed[solana]
+chain-seed[chainlink]
+chain-seed[observability]
+chain-seed[dev]
+```
+
+The base ChainSeed install supports topology rendering. Client-specific
+host-side libraries are installed only by the relevant extra.
+
+## CI Design
+
+```mermaid
+flowchart TD
+    CSPR["ChainSeed pull request"]
+    SEPR["SeedEmu pull request"]
+    PinnedSE["Pinned supported SeedEmu"]
+    SECandidate["Candidate SeedEmu revision"]
+    CSUnit["Unit and render tests"]
+    CSImage["Changed-image build and smoke tests"]
+    CSRuntime["Small runtime integration tests"]
+    SECore["SeedEmu core tests"]
+    Contract["ChainSeed compatibility suite"]
+    Nightly["Scheduled compatibility matrix"]
+    Release["Coordinated release"]
+
+    PinnedSE --> CSUnit
+    PinnedSE --> CSRuntime
+    CSPR --> CSUnit
+    CSPR --> CSImage
+    CSPR --> CSRuntime
+    SEPR --> SECore
+    SECandidate --> Contract
+    Contract --> Nightly
+    CSUnit --> Nightly
+    CSRuntime --> Nightly
+    CSImage --> Nightly
+    Nightly --> Release
+```
+
+### ChainSeed Pull Requests
+
+- Run unit and render tests for all chain packages.
+- Test against a pinned supported SeedEmu revision.
+- Build only changed image targets.
+- Run one small runtime smoke test per affected chain.
+- Validate examples, image manifests, schemas, and documentation.
+
+### SeedEmu Changes
+
+- SeedEmu CI runs only SeedEmu unit and integration tests.
+- An external trigger supplies the candidate SeedEmu revision to ChainSeed.
+- ChainSeed CI runs its import, render, compile, and runtime suite against that
+  candidate.
+- Compatibility failures are owned and diagnosed in ChainSeed, not by a
+  ChainSeed fixture in SeedEmu.
+
+### Scheduled Tests
+
+- Test released ChainSeed against released SeedEmu.
+- Test ChainSeed default branch against SeedEmu default branch.
+- Run broader multi-chain runtime tests.
+- Keep large-scale 10-hour benchmarks manual or scheduled on dedicated hosts.
+
+## Release Contract
+
+Each ChainSeed release publishes:
+
+- a Python package;
+- signed source archives;
+- an OCI image manifest with digests;
+- supported SeedEmu and chain-client versions;
+- experiment schema versions;
+- migration notes for ChainSeed API changes.
+
+Both release commits are frozen and tested before publication. SeedEmu is
+published first because ChainSeed declares it as a dependency; ChainSeed is
+published immediately afterward. The SeedEmu release already excludes the old
+blockchain tree. A failed cut is corrected with new release tags, not by
+maintaining two live implementations.
+
+## Acceptance Criteria
+
+### Repository Boundary
+
+- `seed-emulator` contains no blockchain service implementation or client
+  image recipe.
+- `chain-seed` has a one-way package dependency on SeedEmu.
+- Import-graph checks find no reverse or circular dependency.
+
+### Functional
+
+- Canonical Ethereum PoW/PoS, Monero, Solana, and Chainlink examples render.
+- Small runtime tests produce blocks and submit transactions.
+- Explorer and wallet tools discover nodes through the ChainSeed label schema.
+- Large-scale experiment generation remains reproducible from manifests.
+
+### Build and Release
+
+- Released examples resolve images by digest.
+- Changed-image CI does not rebuild unrelated clients.
+- ChainSeed compatibility CI detects a breaking SeedEmu candidate.
+- Package, image, schema, and client versions are recorded together.
+
+### Data
+
+- No generated deployment, client database, packet capture, or large raw sample
+  is committed.
+- Every external dataset has a URI, checksum, schema, and generator commit.
+
+## Known Breaking Changes
+
+- Old `seedemu.services.*` blockchain imports fail immediately.
+- Old pickled emulators containing blockchain classes do not load.
+- Existing scripts must install `chain-seed` and update imports.
+- Image names and labels may change once, atomically, to the versioned ChainSeed
+  conventions.
+- Tools that parse old labels must move and update in the same release.
