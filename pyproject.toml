@@ -40,10 +40,10 @@ chainseed-test = "chainseed.testing.cli:main"
 
 [tool.setuptools]
 include-package-data = true
-package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
+include = ["chainseed*"]
 
 [tool.setuptools.package-data]
 "chainseed.ethereum.EthTemplates" = [
@@ -63,5 +63,4 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
 

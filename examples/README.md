@@ -11,7 +11,9 @@ protocol:
 
 The D00 PoA and D31 Chainlink examples reuse
 `examples/internet/B03_hybrid_internet` from the editable SeedEmu checkout.
-ChainSeed does not duplicate SeedEmu's network-topology examples.
+ChainSeed locates that checkout through the installed `seedemu` package and
+does not duplicate SeedEmu's network-topology examples. No manual
+`PYTHONPATH` is required.
 
 Run examples from the ChainSeed repository root with both repositories
 installed in the same Python environment:

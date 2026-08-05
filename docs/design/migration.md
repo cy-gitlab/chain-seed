@@ -6,11 +6,11 @@
 
 | Current source | New owner |
 |---|---|
-| `seedemu/services/EthereumService` | `src/chainseed/ethereum` |
-| `seedemu/services/MoneroService` | `src/chainseed/monero` |
-| `seedemu/services/SolanaService` | `src/chainseed/solana` |
-| `seedemu/services/ChainlinkService` | `src/chainseed/chainlink` |
-| `seedemu/testing/blockchain.py` | `src/chainseed/testing` |
+| `seedemu/services/EthereumService` | `chainseed/ethereum` |
+| `seedemu/services/MoneroService` | `chainseed/monero` |
+| `seedemu/services/SolanaService` | `chainseed/solana` |
+| `seedemu/services/ChainlinkService` | `chainseed/chainlink` |
+| `seedemu/testing/blockchain.py` | `chainseed/testing` |
 | `docker_images/seedemu-ethereum` | `images/ethereum` |
 | `docker_images/seedemu-ethexplorer` | `images/ethexplorer` |
 | `docker_images/seedemu-monero` | `images/monero` |

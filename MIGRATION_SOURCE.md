@@ -17,11 +17,11 @@ the local Lighthouse fork, and the preserved D61 large-scale definitions.
 
 | SeedEmu source | ChainSeed destination |
 |---|---|
-| `seedemu/services/EthereumService` | `src/chainseed/ethereum` |
-| `seedemu/services/MoneroService` | `src/chainseed/monero` |
-| `seedemu/services/SolanaService` | `src/chainseed/solana` |
-| `seedemu/services/ChainlinkService` | `src/chainseed/chainlink` |
-| `seedemu/testing/blockchain.py` | `src/chainseed/testing/blockchain.py` |
+| `seedemu/services/EthereumService` | `chainseed/ethereum` |
+| `seedemu/services/MoneroService` | `chainseed/monero` |
+| `seedemu/services/SolanaService` | `chainseed/solana` |
+| `seedemu/services/ChainlinkService` | `chainseed/chainlink` |
+| `seedemu/testing/blockchain.py` | `chainseed/testing/blockchain.py` |
 | `docker_images/seedemu-*` blockchain images | `images/` |
 | `tools/Blockchain` | `tools/blockchain` |
 | `examples/blockchain` canonical examples | `examples/` |

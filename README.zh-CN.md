@@ -78,8 +78,9 @@ python -m pip install -e "./chain-seed[dev,fidelity]"
 ```
 
 部分 ChainSeed 示例会复用 SeedEmu 顶层 `examples` 目录中的拓扑模块。
-editable 安装会暴露这些模块；运行 ChainSeed 示例时应位于 ChainSeed
-仓库根目录。
+ChainSeed 会通过已安装的 `seedemu` 包定位这些模块，因此 SeedEmu 必须从
+包含 `examples` 目录的源码 checkout 进行 editable 安装，无需手动设置
+`PYTHONPATH`。
 
 迁移后使用显式导入：
 
@@ -118,7 +119,7 @@ ChainSeed 当前没有单独的 upstream，可以直接从当前远端发布。�
 目录职责：
 
 ```text
-src/chainseed/   Python 服务层和协议感知测试
+chainseed/   Python 服务层和协议感知测试
 images/          区块链客户端与 Explorer 镜像配方
 tools/           Explorer、钱包和区块链工具
 examples/        按协议分类的小型规范示例

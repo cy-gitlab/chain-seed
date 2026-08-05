@@ -77,7 +77,7 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Compile ChainSeed packages and example tests
-        run: python -m compileall -q src/chainseed examples/ethereum
+        run: python -m compileall -q chainseed examples/ethereum
 
       - name: Check public imports
         run: python -m pytest -q tests/test_public_imports.py

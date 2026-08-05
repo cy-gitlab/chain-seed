@@ -1,11 +1,26 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
+from __future__ import annotations
+
+import os
+from pathlib import Path
+import sys
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from chainseed.common.seedemu_examples import enable_seedemu_examples
+
+enable_seedemu_examples()
+
 from seedemu import *
 from chainseed.ethereum import *
 from examples.internet.B03_hybrid_internet import hybrid_internet
 from examples.ethereum.D00_ethereum_poa import component_poa
-import os, sys
 
 def run(dumpfile = None, hosts_per_as=3, total_eth_nodes=20, total_accounts_per_node=2):
     ###############################################################################

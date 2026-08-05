@@ -74,7 +74,7 @@ depends on Ethereum services and artifacts.
 ```text
 chain-seed/
 ├── pyproject.toml
-├── src/chainseed/
+├── chainseed/
 │   ├── extension.py
 │   ├── common/
 │   │   ├── artifacts.py

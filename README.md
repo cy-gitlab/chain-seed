@@ -85,8 +85,9 @@ python -m pip install -e "./chain-seed[dev,fidelity]"
 ```
 
 Some ChainSeed examples reuse topology modules from SeedEmu's top-level
-`examples` directory. The editable SeedEmu checkout makes those modules
-available; run ChainSeed examples from the ChainSeed repository root.
+`examples` directory. ChainSeed locates those modules through the installed
+`seedemu` package, so SeedEmu must be installed from an editable source
+checkout that includes its examples. No manual `PYTHONPATH` is required.
 
 Use explicit chain imports:
 
@@ -127,7 +128,7 @@ semantic-versioned. A tested compatibility matrix belongs in each release.
 ## Layout
 
 ```text
-src/chainseed/   Python service layers and protocol-aware testing
+chainseed/   Python service layers and protocol-aware testing
 images/          Blockchain client and explorer image recipes
 tools/           Explorer, wallet, and blockchain support tools
 examples/        Small canonical examples grouped by protocol

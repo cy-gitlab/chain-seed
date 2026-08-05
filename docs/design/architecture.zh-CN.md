@@ -73,7 +73,7 @@ Kubo/IPFS 和通用流量服务保留在 SeedEmu，因为它们不属于某一�
 ```text
 chain-seed/
 ├── pyproject.toml
-├── src/chainseed/
+├── chainseed/
 │   ├── extension.py
 │   ├── common/
 │   │   ├── artifacts.py
