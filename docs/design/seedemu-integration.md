@@ -2,6 +2,22 @@
 
 [中文](seedemu-integration.zh-CN.md) | English
 
+## Implementation status
+
+Currently implemented in the coordinated working trees:
+
+- explicit ChainSeed imports and ordinary `Emulator.addLayer()` integration;
+- the generic `ImageRef`/`Node.setBaseImage` compiler boundary.
+
+Planned, but not yet implemented by SeedEmu:
+
+- SeedEmu-side entry-point discovery and `requireExtension()`;
+- extension data in compile manifests;
+- the versioned dump envelope and pre-deserialization validation.
+
+The sections below describe the target contract. Features in the planned list
+must not be documented or tested as already available until their code lands.
+
 ## SeedEmu After the Cut
 
 ```text
@@ -98,12 +114,12 @@ cross-service lookup use them. ChainSeed owns its names, including
 | `addPersistentStorage(path)` | Declare persistent state |
 | `addSharedFolder(host, guest)` | Mount an experiment artifact |
 | `addPortForwarding(host, container)` | Expose RPC or UI |
-| `setBaseImage(image_ref)` | Select an immutable external image |
+| `setBaseImage(image_ref)` | Declare an external image reference |
 
 `setBaseImage` stores a compiler-neutral `ImageRef` on the node:
 
 ```text
-registry, repository, tag, digest, platform
+repository, tag, digest, platform
 ```
 
 Only `repository` and either `tag` or `digest` are required. Release manifests
@@ -194,17 +210,25 @@ crosses the intended compiler boundary.
 
 ## Package and Import Rules
 
+ChainSeed is expected to depend on and import SeedEmu. The boundary concerns
+dependency direction and public API stability, not the existence of imports.
+
 Allowed:
 
 ```python
+from seedemu import Binding, Emulator, Filter
 from seedemu.core import Emulator, Node, Service, Server
-from seedemu.core.enums import NetworkType
+from seedemu.compiler import Docker, Platform
 ```
 
-Forbidden:
+Explicit imports are preferred in library code because they make compatibility
+changes visible. Educational examples may continue to use `from seedemu import
+*`; wildcard imports are a maintainability concern rather than an architecture
+violation.
+
+Not allowed in ChainSeed service implementations:
 
 ```python
-from seedemu import *
 from seedemu.compiler.DockerImage import DockerImage
 from seedemu.services.EthereumService import EthereumService
 ```
@@ -214,14 +238,19 @@ path, or special-case a blockchain layer name.
 
 ## ChainSeed-owned Compatibility Test
 
-A SeedEmu candidate is compatible when the ChainSeed-owned suite can:
+The currently implemented compatibility gate requires the ChainSeed-owned suite
+to:
 
 1. import all public extension interfaces;
 2. render a minimal Ethereum PoS topology;
 3. compile it with the Docker compiler;
-4. emit the expected extension and image manifests;
-5. load a new-format dump when ChainSeed is installed;
-6. reject that dump with a clear error when ChainSeed is absent.
+4. verify ChainSeed image requirements in public compiler output.
+
+When the planned extension metadata and dump work lands, the suite will also:
+
+- verify extension data in compile manifests;
+- load a versioned dump when ChainSeed is installed;
+- reject that dump with a clear error when ChainSeed is absent.
 
 The test code and execution workflow live only in ChainSeed. SeedEmu CI does
 not install, import, or check out ChainSeed. A candidate SeedEmu revision is

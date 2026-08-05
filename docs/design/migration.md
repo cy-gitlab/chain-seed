@@ -55,15 +55,16 @@ import, checkout step, or blockchain-specific compatibility job.
 
 ### 4. Coordinate the Direct Cut
 
-1. Prepare a SeedEmu release commit containing extension API version 1 and
-   removing the old blockchain tree.
-2. Prepare a ChainSeed release commit using that SeedEmu candidate and update
-   all blockchain examples to import `chainseed`.
-3. Build immutable ChainSeed images and run the joint compatibility matrix.
-4. Tag and publish the prepared SeedEmu release.
-5. Immediately publish the prepared ChainSeed package, images, and manifest
-   against that SeedEmu version.
-6. Run installation and runtime checks using only published artifacts.
+1. Prepare paired SeedEmu and ChainSeed working trees with the required public
+   API and all blockchain examples importing `chainseed`.
+2. Run local tests and both repositories' remote CI/CD.
+3. Set both projects' release metadata to `1.0.0`.
+4. Build pinned ChainSeed images and run the joint compatibility matrix.
+5. Tag and publish SeedEmu `v1.0.0` from its current fork remote; never push or
+   tag the SeedEmu upstream remote during this validation.
+6. Tag and publish ChainSeed `v1.0.0` from its current remote.
+7. Reinstall both projects from those tags and rerun installation/runtime tests.
+8. Only after that validation, open the SeedEmu pull request against upstream.
 
 No aliases, forwarding modules, wrapper scripts, or deprecated import paths are
 introduced.
@@ -154,11 +155,12 @@ Each ChainSeed release publishes:
 - experiment schema versions;
 - migration notes for ChainSeed API changes.
 
-Both release commits are frozen and tested before publication. SeedEmu is
-published first because ChainSeed declares it as a dependency; ChainSeed is
-published immediately afterward. The SeedEmu release already excludes the old
-blockchain tree. A failed cut is corrected with new release tags, not by
-maintaining two live implementations.
+Both release commits are frozen and tested before publication. For the initial
+validation, SeedEmu is published from its current fork remote first because
+ChainSeed declares it as a dependency; ChainSeed is published immediately
+afterward. Both tags are reinstalled and tested before any upstream SeedEmu PR
+is opened. The upstream remote is never modified directly. A failed cut is
+corrected with new release tags, not by maintaining two live implementations.
 
 ## Acceptance Criteria
 

@@ -2,6 +2,22 @@
 
 中文 | [English](seedemu-integration.md)
 
+## 实现状态
+
+当前两个配套工作区已经实现：
+
+- 显式导入 ChainSeed，并通过普通的 `Emulator.addLayer()` 完成集成；
+- 通用的 `ImageRef`/`Node.setBaseImage` 编译器边界。
+
+SeedEmu 尚未实现、仍属于计划的内容：
+
+- SeedEmu 侧的 entry point 发现和 `requireExtension()`；
+- 编译 manifest 中的扩展信息；
+- 带版本的 dump 封装和反序列化前验证。
+
+下文描述目标契约。上述计划功能在代码落地前，不应被文档或测试视为已经
+可用。
+
 ## 拆分后的 SeedEmu
 
 ```text
@@ -96,12 +112,12 @@ Python entry point 只用于报告已安装扩展和验证制品，不替代显�
 | `addPersistentStorage(path)` | 声明持久化状态 |
 | `addSharedFolder(host, guest)` | 挂载实验制品 |
 | `addPortForwarding(host, container)` | 暴露 RPC 或界面端口 |
-| `setBaseImage(image_ref)` | 选择不可变的外部镜像 |
+| `setBaseImage(image_ref)` | 声明外部镜像引用 |
 
 `setBaseImage` 在节点上保存与编译器无关的 `ImageRef`：
 
 ```text
-registry, repository, tag, digest, platform
+repository, tag, digest, platform
 ```
 
 其中 `repository` 以及 `tag` 或 `digest` 二者之一为必填。正式发布清单
@@ -190,17 +206,23 @@ flowchart LR
 
 ## 软件包与导入规则
 
+ChainSeed 本来就应依赖并导入 SeedEmu。这里的边界关注依赖方向和公共 API
+稳定性，而不是是否存在导入语句。
+
 允许：
 
 ```python
+from seedemu import Binding, Emulator, Filter
 from seedemu.core import Emulator, Node, Service, Server
-from seedemu.core.enums import NetworkType
+from seedemu.compiler import Docker, Platform
 ```
 
-禁止：
+库源码推荐显式导入，这样兼容性变化更容易发现。教学示例可以继续使用
+`from seedemu import *`；通配符导入属于可维护性问题，而不是架构违规。
+
+ChainSeed 服务实现中不允许：
 
 ```python
-from seedemu import *
 from seedemu.compiler.DockerImage import DockerImage
 from seedemu.services.EthereumService import EthereumService
 ```
@@ -210,14 +232,18 @@ SeedEmu 公共模块不得导入 `chainseed`、检查 ChainSeed 安装路径或�
 
 ## ChainSeed 负责的兼容性测试
 
-候选 SeedEmu 版本在 ChainSeed 自有测试套件满足以下条件时才视为兼容：
+当前已经实现的兼容性门禁要求 ChainSeed 自有测试套件：
 
 1. 固定版本的 ChainSeed 测试夹具可以导入全部公共扩展接口；
 2. 能够渲染最小 Ethereum PoS 拓扑；
 3. 能够使用 Docker 编译器完成编译；
-4. 能够输出预期扩展和镜像清单；
-5. 安装 ChainSeed 时可以加载新格式 dump；
-6. 未安装 ChainSeed 时能够以明确错误拒绝相应 dump。
+4. 能够从公开编译制品中验证 ChainSeed 镜像要求。
+
+扩展元数据与 dump 功能实现后，测试套件还将：
+
+- 验证编译 manifest 中的扩展信息；
+- 在安装 ChainSeed 时加载带版本的 dump；
+- 未安装 ChainSeed 时以明确错误拒绝相应 dump。
 
 测试代码和执行工作流只存在于 ChainSeed。SeedEmu CI 不安装、不导入、
 也不检出 ChainSeed；外部触发器或发布门禁只把候选 SeedEmu revision

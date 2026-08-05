@@ -199,7 +199,9 @@ flowchart TD
 
 Chain packages must not import one another except for an explicit protocol
 dependency such as Chainlink using Ethereum. Circular imports are forbidden.
-Wildcard imports from `seedemu` are forbidden.
+Explicit SeedEmu imports are preferred in library modules so dependency changes
+remain visible. Existing educational examples may use wildcard imports; this is
+a style and maintainability concern, not a violation of dependency direction.
 
 ## SeedEmu Extension Contract
 
@@ -243,7 +245,10 @@ from seedemu import EthereumService
 chainseed = "chainseed.extension:descriptor"
 ```
 
-The descriptor is used for diagnostics and artifact validation, not for
+The descriptor is currently ChainSeed-owned metadata. SeedEmu does not yet
+discover or consume this entry point, and users still import services and call
+`Emulator.addLayer()` explicitly. SeedEmu-side discovery, artifact validation,
+and dump integration remain planned work; the descriptor will not be used for
 implicit service construction.
 
 Future emulator dumps use a versioned envelope:

@@ -196,7 +196,9 @@ flowchart TD
 ```
 
 除 Chainlink 显式依赖 Ethereum 这类协议关系外，各链软件包不得互相
-导入。禁止循环依赖，也禁止从 `seedemu` 进行通配符导入。
+导入，也不得形成循环依赖。库源码推荐显式导入 SeedEmu，使依赖变化更
+清楚；已有教学示例可以使用通配符导入，这属于风格和可维护性问题，不是
+依赖方向违规。
 
 ## SeedEmu 扩展契约
 
@@ -239,7 +241,9 @@ from seedemu import EthereumService
 chainseed = "chainseed.extension:descriptor"
 ```
 
-该描述符只用于诊断和制品验证，不用于隐式创建服务。
+当前该描述符只是 ChainSeed 自有元数据，SeedEmu 尚未发现或消费这个 entry
+point；用户仍需显式导入服务并调用 `Emulator.addLayer()`。SeedEmu 侧的发现、
+制品验证和 dump 集成仍属于后续计划，而且描述符不会用于隐式创建服务。
 
 未来的仿真器 dump 使用带版本的封装：
 

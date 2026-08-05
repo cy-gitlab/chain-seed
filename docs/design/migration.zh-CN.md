@@ -53,13 +53,15 @@
 
 ### 4. 协调直接切换
 
-1. 准备 SeedEmu 发布提交，其中包含扩展 API 版本 1，并已删除旧区块链目录。
-2. 基于该 SeedEmu 候选版本准备 ChainSeed 发布提交，所有示例改为导入
-   `chainseed`。
-3. 构建不可变的 ChainSeed 镜像并运行联合兼容矩阵。
-4. 标记并发布准备好的 SeedEmu 版本。
-5. 随即发布依赖该 SeedEmu 版本的 ChainSeed 软件包、镜像和清单。
-6. 仅使用正式发布制品运行安装和运行时检查。
+1. 准备配套的 SeedEmu 与 ChainSeed 工作树，加入所需公共 API，并让所有
+   区块链示例导入 `chainseed`；
+2. 运行本地测试以及两个仓库的远端 CI/CD；
+3. 将两个项目的发布元数据设置为 `1.0.0`；
+4. 构建固定版本的 ChainSeed 镜像并运行联合兼容矩阵；
+5. 从 SeedEmu 当前 fork 远端发布 `v1.0.0`，验证期间绝不推送或标记 upstream；
+6. 从 ChainSeed 当前远端发布 `v1.0.0`；
+7. 从两个 tag 重新安装并运行安装与运行时测试；
+8. 验证通过后再向 SeedEmu upstream 提交 PR。
 
 不会引入别名、转发模块、包装脚本或已弃用导入路径。
 
@@ -146,10 +148,11 @@ flowchart TD
 - 实验模式版本；
 - ChainSeed API 变更迁移说明。
 
-两个发布提交必须在发布前冻结并完成联合测试。由于 ChainSeed 声明
-SeedEmu 为依赖，应先发布 SeedEmu，随后立即发布 ChainSeed。此时 SeedEmu
-版本已经不包含旧区块链目录。发布失败时使用新版本标签修复，不维护两套
-并行实现。
+两个发布提交必须在发布前冻结并完成联合测试。首次验证时，由于 ChainSeed
+声明 SeedEmu 为依赖，应先从 SeedEmu 当前 fork 远端发布，随后从 ChainSeed
+当前远端发布。必须从两个 tag 重新安装并测试通过后，才能提交 SeedEmu
+upstream PR；不得直接修改 upstream。发布失败时使用新版本标签修复，不维护
+两套并行实现。
 
 ## 验收条件
 
