@@ -17,6 +17,7 @@ dependencies = [
   "eth-account==0.5.9",
   "requests>=2.22",
   "web3==5.31.1",
+  "setuptools<81",
 ]
 
 [project.optional-dependencies]
@@ -33,6 +34,9 @@ fidelity = [
 
 [project.entry-points."seedemu.extensions"]
 chainseed = "chainseed.extension:descriptor"
+
+[project.scripts]
+chainseed-test = "chainseed.testing.cli:main"
 
 [tool.setuptools]
 include-package-data = true

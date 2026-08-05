@@ -1,12 +1,20 @@
 # Test Ownership
 
-All blockchain-specific tests are owned and executed by ChainSeed.
+ChainSeed uses the same manifest-driven lifecycle as SeedEmu. Canonical tests
+live beside their examples as `example.yaml` and `test_runtime.py`; the
+`chainseed-test` command runs the compile, build, start, readiness, probe,
+functional-test, and cleanup stages locally and in GitHub Actions.
 
-- `test_public_imports.py` checks the public package and extension descriptor.
-- `protocol/` contains Ethereum, Monero, Solana, and Chainlink behavior and
-  runtime tests migrated from SeedEmu.
+For example:
 
-ChainSeed changes are tested against a pinned supported SeedEmu revision.
-SeedEmu changes are tested by passing the candidate SeedEmu revision into the
-ChainSeed compatibility suite. SeedEmu itself does not install, import, check
-out, or test ChainSeed.
+```bash
+chainseed-test compile examples/ethereum/D01_ethereum_pos/example.yaml
+chainseed-test all examples/ethereum/D01_ethereum_pos/example.yaml
+```
+
+`test_public_imports.py` remains a lightweight package/API check. The files in
+`protocol/` are legacy protocol tests retained as migration references; new
+coverage belongs in example manifests and runtime programs.
+
+ChainSeed CI checks out a selected SeedEmu revision and installs both projects
+as editable packages. SeedEmu CI does not install or import ChainSeed.

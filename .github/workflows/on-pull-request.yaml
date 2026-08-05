@@ -1,0 +1,227 @@
+name: Check Pull Request
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      seedemu-ref:
+        description: "SeedEmu revision from BruceJqs/seed-emulator"
+        type: string
+        required: true
+        default: development
+      selected-example:
+        description: "Run one selected example, or all"
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - D01
+          - D10
+          - D20
+          - D21
+          - D22
+          - D23
+      run-full-lifecycle:
+        description: "Run Docker build/up/probe/test/down lifecycle"
+        type: boolean
+        required: false
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  SEEDEMU_REF: ${{ github.event.inputs['seedemu-ref'] || 'development' }}
+  SELECTED_EXAMPLE: ${{ github.event.inputs['selected-example'] || 'all' }}
+  RUN_FULL_LIFECYCLE: ${{ github.event.inputs['run-full-lifecycle'] || 'true' }}
+
+jobs:
+  static-checks:
+    name: Static Checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: chain-seed
+    steps:
+      - name: Check out ChainSeed
+        uses: actions/checkout@v5
+        with:
+          path: chain-seed
+
+      - name: Check out SeedEmu
+        uses: actions/checkout@v5
+        with:
+          repository: BruceJqs/seed-emulator
+          ref: ${{ env.SEEDEMU_REF }}
+          path: seed-emulator
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: |
+            seed-emulator/**/*requirements.txt
+            chain-seed/pyproject.toml
+
+      - name: Install coordinated workspaces
+        run: |
+          pip install -r ../seed-emulator/requirements.txt -r ../seed-emulator/dev-requirements.txt -r ../seed-emulator/tests/requirements.txt
+          pip install -e ../seed-emulator
+          pip install -e ".[dev]"
+
+      - name: Compile ChainSeed packages and example tests
+        run: python -m compileall -q src/chainseed examples/ethereum
+
+      - name: Check public imports
+        run: python -m pytest -q tests/test_public_imports.py
+
+      - name: Validate example manifests
+        run: |
+          chainseed-test clean examples/ethereum/D01_ethereum_pos/example.yaml
+          chainseed-test clean examples/ethereum/D10_eth_explorer/example.yaml
+          chainseed-test clean examples/ethereum/D20_faucet/example.yaml
+          chainseed-test clean examples/ethereum/D21_deploy_contract/example.yaml
+          chainseed-test clean examples/ethereum/D22_oracle/example.yaml
+          chainseed-test clean examples/ethereum/D23_validator/example.yaml
+
+  compile-selected-examples:
+    name: Compile ${{ matrix.example.code }}
+    needs: static-checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: chain-seed
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - code: D01
+            manifest: examples/ethereum/D01_ethereum_pos/example.yaml
+          - code: D10
+            manifest: examples/ethereum/D10_eth_explorer/example.yaml
+          - code: D20
+            manifest: examples/ethereum/D20_faucet/example.yaml
+          - code: D21
+            manifest: examples/ethereum/D21_deploy_contract/example.yaml
+          - code: D22
+            manifest: examples/ethereum/D22_oracle/example.yaml
+          - code: D23
+            manifest: examples/ethereum/D23_validator/example.yaml
+    steps:
+      - name: Check out ChainSeed
+        uses: actions/checkout@v5
+        with:
+          path: chain-seed
+
+      - name: Check out SeedEmu
+        uses: actions/checkout@v5
+        with:
+          repository: BruceJqs/seed-emulator
+          ref: ${{ env.SEEDEMU_REF }}
+          path: seed-emulator
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: |
+            seed-emulator/**/*requirements.txt
+            chain-seed/pyproject.toml
+
+      - name: Install coordinated workspaces
+        run: |
+          pip install -r ../seed-emulator/requirements.txt -r ../seed-emulator/dev-requirements.txt -r ../seed-emulator/tests/requirements.txt
+          pip install -e ../seed-emulator
+          pip install -e ".[dev]"
+
+      - name: Compile selected example
+        if: ${{ env.SELECTED_EXAMPLE == 'all' || env.SELECTED_EXAMPLE == matrix.example.code }}
+        run: |
+          chainseed-test compile \
+            ${{ matrix.example.manifest }} \
+            --artifact-dir ci-artifacts/${{ matrix.example.code }}-compile
+
+      - name: Upload compile artifacts
+        if: ${{ always() && (env.SELECTED_EXAMPLE == 'all' || env.SELECTED_EXAMPLE == matrix.example.code) }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: chainseed-${{ matrix.example.code }}-compile-artifacts
+          path: chain-seed/ci-artifacts/${{ matrix.example.code }}-compile
+
+  run-selected-examples:
+    name: Run ${{ matrix.example.code }}
+    needs: compile-selected-examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: chain-seed
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - code: D01
+            manifest: examples/ethereum/D01_ethereum_pos/example.yaml
+          - code: D10
+            manifest: examples/ethereum/D10_eth_explorer/example.yaml
+          - code: D20
+            manifest: examples/ethereum/D20_faucet/example.yaml
+          - code: D21
+            manifest: examples/ethereum/D21_deploy_contract/example.yaml
+          - code: D22
+            manifest: examples/ethereum/D22_oracle/example.yaml
+          - code: D23
+            manifest: examples/ethereum/D23_validator/example.yaml
+    steps:
+      - name: Check out ChainSeed
+        uses: actions/checkout@v5
+        with:
+          path: chain-seed
+
+      - name: Check out SeedEmu
+        uses: actions/checkout@v5
+        with:
+          repository: BruceJqs/seed-emulator
+          ref: ${{ env.SEEDEMU_REF }}
+          path: seed-emulator
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: |
+            seed-emulator/**/*requirements.txt
+            chain-seed/pyproject.toml
+
+      - name: Install coordinated workspaces
+        run: |
+          pip install -r ../seed-emulator/requirements.txt -r ../seed-emulator/dev-requirements.txt -r ../seed-emulator/tests/requirements.txt
+          pip install -e ../seed-emulator
+          pip install -e ".[dev]"
+
+      - name: Run selected example lifecycle
+        if: ${{ env.RUN_FULL_LIFECYCLE == 'true' && (env.SELECTED_EXAMPLE == 'all' || env.SELECTED_EXAMPLE == matrix.example.code) }}
+        run: |
+          chainseed-test all \
+            ${{ matrix.example.manifest }} \
+            --artifact-dir ci-artifacts/${{ matrix.example.code }}
+
+      - name: Upload lifecycle artifacts
+        if: ${{ always() && env.RUN_FULL_LIFECYCLE == 'true' && (env.SELECTED_EXAMPLE == 'all' || env.SELECTED_EXAMPLE == matrix.example.code) }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: chainseed-${{ matrix.example.code }}-lifecycle-artifacts
+          path: chain-seed/ci-artifacts/${{ matrix.example.code }}

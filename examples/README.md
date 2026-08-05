@@ -23,3 +23,11 @@ python examples/ethereum/D01_ethereum_pos/ethereum_pos.py
 ```
 
 Generated `output/` directories are intentionally not versioned.
+
+Each migrated example has an `example.yaml` manifest. Run the same lifecycle
+used by GitHub Actions with:
+
+```bash
+chainseed-test compile examples/ethereum/D01_ethereum_pos/example.yaml
+chainseed-test all examples/ethereum/D01_ethereum_pos/example.yaml
+```

@@ -8,7 +8,7 @@ import shlex
 import time
 from typing import Any, Callable, Dict, Optional
 
-from seedemu.testing import EthereumRuntimeTest
+from chainseed.testing import EthereumRuntimeTest
 
 
 WEI_PER_ETH = 10**18

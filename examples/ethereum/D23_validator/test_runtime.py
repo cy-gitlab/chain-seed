@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 import requests
 
-from seedemu.testing import EthereumRuntimeTest
+from chainseed.testing import EthereumRuntimeTest
 
 
 DEPOSIT_CONTRACT = "0x00000000219ab540356cBB839Cbe05303d7705Fa"
