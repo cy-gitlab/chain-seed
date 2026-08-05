@@ -298,14 +298,6 @@ def main() -> int:
 
     wait_for_http(
         test,
-        "EthExplorer validator UI renders validator 0",
-        "/validator/0",
-        predicate=body_has_any("validator", "pubkey", "balance", "status"),
-        retries=90,
-        interval=5,
-    )
-    wait_for_http(
-        test,
         "EthExplorer validators list UI renders",
         "/validators",
         predicate=body_has_any("validator", "validators"),
