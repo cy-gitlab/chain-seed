@@ -1,10 +1,11 @@
-from seedemu.core import BaseSystem, Emulator, Node, Service
+from seedemu.core import Emulator, Node, Service
 from seedemu.core.Service import Server
 from seedemu.core.enums import NetworkType
 from ..ethereum import EthereumServer, EthUtilityServer
 from .ChainlinkTemplates import *
 from .ChainlinkBaseServer import *
 from .ChainlinkUserServer import *
+from ..common.images import CHAINLINK_IMAGES, apply_base_images
 import re
 
 class ChainlinkServer(ChainlinkBaseServer):
@@ -21,7 +22,6 @@ class ChainlinkServer(ChainlinkBaseServer):
         @brief ChainlinkServer Constructor.
         """
         super().__init__()
-        self._base_system = BaseSystem.SEEDEMU_CHAINLINK
 
     def setName(self, name: str):
         """
@@ -33,6 +33,8 @@ class ChainlinkServer(ChainlinkBaseServer):
         """
         @brief Install the service.
         """
+
+        apply_base_images(node, CHAINLINK_IMAGES)
 
         self.__installSoftware(node)
         self.__installConfigurationFiles(node)

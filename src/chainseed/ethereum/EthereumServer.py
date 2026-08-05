@@ -1,5 +1,5 @@
 from __future__ import annotations
-from seedemu.core import Node, Server, BaseSystem
+from seedemu.core import Node, Server
 from .EthEnum import *
 from .EthUtil import *
 from typing import TYPE_CHECKING, List
@@ -90,8 +90,6 @@ class EthereumServer(Server):
         self._miner_thread = 1
         self._coinbase = None
         self._geth_start_command = ""
-
-        self._base_system = BaseSystem.SEEDEMU_ETHEREUM_POS if self._consensus_mechanism == ConsensusMechanism.POS else BaseSystem.SEEDEMU_ETHEREUM_LEGACY
 
         self._role = []
         

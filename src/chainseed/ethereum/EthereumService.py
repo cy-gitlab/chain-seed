@@ -11,6 +11,12 @@ from .EthUtilityServer import EthUtilityServer
 from typing import Dict, List
 from sys import stderr
 
+from ..common.images import (
+    ETHEREUM_LEGACY_IMAGES,
+    ETHEREUM_POS_IMAGES,
+    apply_base_images,
+)
+
 class Blockchain:
     """!
     @brief The individual blockchain in EthereumService.
@@ -748,6 +754,12 @@ class EthereumService(Service):
     def _doInstall(self, node: Node, server: Server):   ##这里的server是基类 service的render 传进来的
         self._log('installing eth on as{}/{}...'.format(node.getAsn(), node.getName()))
         if isinstance(server, EthereumServer):
+            image_refs = (
+                ETHEREUM_POS_IMAGES
+                if server.getConsensusMechanism() == ConsensusMechanism.POS
+                else ETHEREUM_LEGACY_IMAGES
+            )
+            apply_base_images(node, image_refs)
             server.install(node, self)
         elif isinstance(server, FaucetServer):
             server.install(node)
