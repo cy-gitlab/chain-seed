@@ -8,6 +8,8 @@ Currently implemented in the coordinated working trees:
 
 - explicit ChainSeed imports and ordinary `Emulator.addLayer()` integration;
 - the generic `ImageRef`/`Node.setBaseImage` compiler boundary.
+- generic Docker Compose service registration and compiled-network name lookup,
+  used by the ChainSeed-owned EthExplorer deployment adapter.
 
 Planned, but not yet implemented by SeedEmu:
 
@@ -204,9 +206,13 @@ flowchart LR
     Other --> Output
 ```
 
-The current compiler-specific Monero image override is replaced by
-`Node.setBaseImage`. This is the only known blockchain service dependency that
-crosses the intended compiler boundary.
+The compiler-specific Monero image override is replaced by
+`Node.setBaseImage`. EthExplorer uses the public Docker
+`addComposeService()` and `getComposeNetworkName()` operations to contribute
+auxiliary containers without accessing compiler state. These operations are
+generic Docker deployment primitives: SeedEmu neither imports ChainSeed nor
+contains knowledge of Explorer services. The legacy SeedEmu Explorer
+implementation remains temporarily available only during migration validation.
 
 ## Package and Import Rules
 

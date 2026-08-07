@@ -10,7 +10,7 @@ class PublicImportTests(unittest.TestCase):
 
     def test_chain_public_imports(self):
         from chainseed.chainlink import ChainlinkService
-        from chainseed.ethereum import ConsensusMechanism, EthereumService
+        from chainseed.ethereum import ConsensusMechanism, EthExplorer, EthereumService
         from chainseed.monero import MoneroService
         from chainseed.solana import SolanaService
 
@@ -20,6 +20,7 @@ class PublicImportTests(unittest.TestCase):
                 service is not None
                 for service in (
                     EthereumService,
+                    EthExplorer,
                     MoneroService,
                     SolanaService,
                     ChainlinkService,

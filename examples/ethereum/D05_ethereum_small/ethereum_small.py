@@ -108,7 +108,7 @@ def run(dumpfile = None, total_hosts=15, total_eth_nodes=10):
         emu.dump(dumpfile)
     else:
         emu.render()
-        docker = Docker(etherViewEnabled=True, platform=platform)
+        docker = Docker(platform=platform)
         emu.compile(docker, './output', override=True)
 
 if __name__ == "__main__":

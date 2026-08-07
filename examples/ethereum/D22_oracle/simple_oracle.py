@@ -59,17 +59,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", default=str(SCRIPT_DIR / "output"))
     parser.add_argument("--dumpfile")
     parser.add_argument(
+        "--eth-explorer",
         "--ether-view",
         dest="ether_view_enabled",
         action="store_true",
-        default=True,
-        help="enable Eth Explorer output in generated Docker files (default)",
+        default=None,
+        help="enable ChainSeed EthExplorer (PoS only; enabled by default for PoS)",
     )
     parser.add_argument(
+        "--no-eth-explorer",
         "--no-ether-view",
         dest="ether_view_enabled",
         action="store_false",
-        help="disable Eth Explorer output; useful for CI builds",
+        help="disable ChainSeed EthExplorer",
     )
     parser.add_argument("--override", dest="override", action="store_true", default=True)
     parser.add_argument("--no-override", dest="override", action="store_false")
@@ -89,6 +91,8 @@ def parse_args() -> argparse.Namespace:
 
     args.consensus = args.consensus or legacy_consensus or "poa"
     args.platform = args.platform or legacy_platform or "amd"
+    if args.ether_view_enabled is None:
+        args.ether_view_enabled = args.consensus == "pos"
     return args
 
 
@@ -206,8 +210,13 @@ def run(
     platform=Platform.AMD64,
     override: bool = True,
     render: bool = True,
-    ether_view_enabled: bool = True,
+    ether_view_enabled: bool | None = None,
 ):
+    if ether_view_enabled is None:
+        ether_view_enabled = consensus == "pos"
+    if ether_view_enabled and consensus != "pos":
+        raise ValueError("EthExplorer requires --consensus pos")
+
     emu = build_emulator(consensus=consensus)
     if dumpfile is not None:
         emu.dump(dumpfile)
@@ -218,7 +227,10 @@ def run(
 
     output_dir = Path(output or SCRIPT_DIR / "output").resolve()
     output_dir.parent.mkdir(parents=True, exist_ok=True)
-    docker = Docker(etherViewEnabled=ether_view_enabled, platform=platform)
+    docker = Docker(platform=platform)
+    if ether_view_enabled:
+        EthExplorer(chain_name="pos").attach(emu, docker)
+
     emu.compile(docker, str(output_dir), override=override)
 
 

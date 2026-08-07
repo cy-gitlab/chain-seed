@@ -30,6 +30,10 @@ ChainSeed 可以导入 `seedemu` 已公开且有文档约束的 API。反方向�
 但 Python 包归属改为 `chainseed.*`。拆分不要求 SeedEmu 导入 ChainSeed。
 联合开发可以向 SeedEmu 增加 `Node.setBaseImage` 这样的通用扩展接口，但
 区块链实现、镜像、示例和协议测试仍由本仓库负责。
+EthExplorer 部署也由 ChainSeed 负责：Python 集成位于
+`chainseed.ethereum.EthExplorer`，镜像配方保留在 `images/ethexplorer`。
+SeedEmu 只提供通用的 Docker Compose 扩展接口；在 ChainSeed 路径完成兼容性
+验证前，SeedEmu 中的旧 Explorer 路径暂时保留用于对照。
 
 仓库不复制生成的 Compose 输出、客户端数据库、大规模原始采样、Xatu 输入
 数据、Python 缓存和 Node 依赖缓存。来源与排除项记录在

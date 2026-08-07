@@ -308,10 +308,9 @@ If the result is `"0x"`, there is no contract code at that address. If
 the result is a long hexadecimal string, the contract bytecode has been
 stored on chain.
 
-This example compiles the Docker output with `etherViewEnabled=True`.
-When the selected blockchain and explorer services are running, the
-generated output can also provide a web interface for observing blocks,
-transactions, and contract deployment activity.
+For PoS runs, ChainSeed EthExplorer is enabled by default and can be
+disabled with `--no-eth-explorer`. PoA runs do not enable it because the
+Beacon consensus endpoint required by EthExplorer is not present.
 
 
 ## Interact with the Utility Server Using Python

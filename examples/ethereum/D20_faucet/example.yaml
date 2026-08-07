@@ -18,7 +18,7 @@ compile:
   args:
     - --consensus
     - pos
-    - --no-ether-view
+    - --no-eth-explorer
   clean:
     - output
   expected:

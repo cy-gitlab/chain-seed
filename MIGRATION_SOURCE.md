@@ -42,8 +42,10 @@ checksum, schema version, and generator commit.
 
 ## Known compatibility debt
 
-The current SeedEmu release does not yet expose the compiler-neutral
-`Node.setBaseImage(ImageRef)` contract described in `docs/design`. The copied
-Monero custom-image feature therefore temporarily retains its existing Docker
-compiler integration. This exception is isolated and should be removed after
-SeedEmu publishes the extension API.
+The coordinated SeedEmu branch now exposes the compiler-neutral
+`Node.setBaseImage(ImageRef)` contract and generic Docker Compose service
+registration used by ChainSeed. ChainSeed no longer uses Docker's private image
+override implementation, and EthExplorer deployment is now contributed by
+`chainseed.ethereum.EthExplorer`. The original SeedEmu blockchain services
+and Explorer code remain temporarily available for comparison and will be
+removed only after the extracted path passes the agreed compatibility gate.

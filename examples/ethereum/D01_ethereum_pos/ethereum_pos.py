@@ -39,17 +39,19 @@ def parse_args() -> argparse.Namespace:
         help="validator clients per beacon node",
     )
     parser.add_argument(
+        "--eth-explorer",
         "--ether-view",
         dest="ether_view_enabled",
         action="store_true",
         default=True,
-        help="enable Eth Explorer output in generated Docker files (default)",
+        help="enable the ChainSeed EthExplorer stack (default)",
     )
     parser.add_argument(
+        "--no-eth-explorer",
         "--no-ether-view",
         dest="ether_view_enabled",
         action="store_false",
-        help="disable Eth Explorer output; useful for CI builds",
+        help="disable the ChainSeed EthExplorer stack; useful for CI builds",
     )
     parser.add_argument("--override", dest="override", action="store_true", default=True)
     parser.add_argument("--no-override", dest="override", action="store_false")
@@ -194,11 +196,10 @@ def run(
 
     output_dir = Path(output or SCRIPT_DIR / "output").resolve()
     output_dir.parent.mkdir(parents=True, exist_ok=True)
-    docker = Docker(
-        internetMapEnabled=True,
-        etherViewEnabled=ether_view_enabled,
-        platform=platform,
-    )
+    docker = Docker(internetMapEnabled=True, platform=platform)
+    if ether_view_enabled:
+        EthExplorer(chain_name="pos").attach(emu, docker)
+
     emu.compile(docker, str(output_dir), override=override)
 
 

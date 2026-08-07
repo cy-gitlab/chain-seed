@@ -15,7 +15,7 @@ compile:
   enabled: true
   output: output
   args:
-    - --no-ether-view
+    - --no-eth-explorer
   clean:
     - output
   expected:

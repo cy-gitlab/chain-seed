@@ -151,7 +151,7 @@ emu.dump('blockchain_poa.bin')
 
 emu.render()
 
-docker = Docker(etherViewEnabled=True, platform=platform)
+docker = Docker(platform=platform)
 
 # If output directory exists and override is set to false, we call exit(1)
 # updateOutputdirectory will not be called

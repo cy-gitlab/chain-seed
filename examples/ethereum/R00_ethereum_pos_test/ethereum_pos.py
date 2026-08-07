@@ -161,8 +161,9 @@ for asn in asns:
 
 emu.render()
 
-# Enable internetMap and etherView for visualization
-docker = Docker(internetMapEnabled=True, etherViewEnabled=True, platform=platform)
+# Enable the Internet Map and ChainSeed EthExplorer
+docker = Docker(internetMapEnabled=True, platform=platform)
+EthExplorer(chain_name="pos").attach(emu, docker)
 
 # Compile the emulator to output
 emu.compile(docker, './output', override=True)

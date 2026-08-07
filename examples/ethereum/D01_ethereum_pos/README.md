@@ -248,10 +248,10 @@ The example enables both the Internet Map and the Eth Explorer when
 compiling the Docker output.
 
 ```python
-docker = Docker(
-        internetMapEnabled=True,
-        etherViewEnabled=ether_view_enabled,
-        platform=platform)
+docker = Docker(internetMapEnabled=True, platform=platform)
+if ether_view_enabled:
+    EthExplorer(chain_name="pos").attach(emu, docker)
+
 emu.compile(docker, output, override=True)
 ```
 
@@ -263,7 +263,7 @@ validators, and execution-layer transactions.
 default for manual runs, and can be disabled for CI:
 
 ```bash
-python3 ethereum_pos.py --no-ether-view
+python3 ethereum_pos.py --no-eth-explorer
 ```
 
 
@@ -301,9 +301,9 @@ Arguments:
 - `arm`: Generate Docker configuration for ARM64 hosts.
 - `--platform amd|arm`: Standard test-framework platform argument.
 - `--output DIR`: Standard test-framework output directory argument.
-- `--ether-view`: Enable Eth Explorer output. This is the default for manual
+- `--eth-explorer`: Enable the ChainSeed EthExplorer stack. This is the default for manual
   runs.
-- `--no-ether-view`: Disable Eth Explorer output. The test manifest uses this
+- `--no-eth-explorer`: Disable the ChainSeed EthExplorer stack. The test manifest uses this
   option for CI.
 
 Startup may take some time. The Geth nodes, Beacon nodes, Validator

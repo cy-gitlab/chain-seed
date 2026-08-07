@@ -77,7 +77,7 @@ def run(dumpfile = None, total_chainlink_nodes = 3):
     else:
         emu.render()
 
-        docker = Docker(etherViewEnabled=True, platform=platform)
+        docker = Docker(platform=platform)
         emu.compile(docker, './output', override = True)
 
     print("-----------------------------------------")

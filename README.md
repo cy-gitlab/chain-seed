@@ -34,6 +34,11 @@ ownership. The extraction does not require SeedEmu to import ChainSeed.
 Coordinated development may add generic extension APIs such as
 `Node.setBaseImage` to SeedEmu, while blockchain implementations, images,
 examples, and protocol tests remain owned by this repository.
+EthExplorer deployment is also owned by ChainSeed. The Python integration
+lives in `chainseed.ethereum.EthExplorer`, while build recipes remain in
+`images/ethexplorer`. SeedEmu supplies only generic Docker Compose extension
+APIs; its legacy Explorer path is retained temporarily for comparison until the
+ChainSeed path has completed compatibility testing.
 
 Generated Compose output, client databases, raw benchmark samples, Xatu input
 datasets, Python caches, and Node package caches are excluded. The extraction

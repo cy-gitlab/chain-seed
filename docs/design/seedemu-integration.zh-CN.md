@@ -8,6 +8,8 @@
 
 - 显式导入 ChainSeed，并通过普通的 `Emulator.addLayer()` 完成集成；
 - 通用的 `ImageRef`/`Node.setBaseImage` 编译器边界。
+- 通用的 Docker Compose 服务注册和编译后网络名查询，供 ChainSeed 自有的
+  EthExplorer 部署适配器使用。
 
 SeedEmu 尚未实现、仍属于计划的内容：
 
@@ -200,9 +202,12 @@ flowchart LR
     Other --> Output
 ```
 
-当前 Monero 服务对编译器内部镜像覆盖接口的调用，将由
-`Node.setBaseImage` 替代。这是目前唯一已知的区块链服务越过目标编译器
-边界的问题。
+Monero 服务原先对编译器内部镜像覆盖接口的调用已经由
+`Node.setBaseImage` 替代。EthExplorer 通过公开的 Docker
+`addComposeService()` 和 `getComposeNetworkName()` 接口添加辅助容器，
+不访问编译器内部状态。这两个接口是通用 Docker 部署能力；SeedEmu 不导入
+ChainSeed，也不了解 Explorer 服务。SeedEmu 中的旧 Explorer 实现仅在迁移
+验证期间暂时保留。
 
 ## 软件包与导入规则
 
