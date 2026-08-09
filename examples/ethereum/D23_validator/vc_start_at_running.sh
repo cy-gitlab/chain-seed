@@ -226,7 +226,10 @@ pk = Account.decrypt(ks, KEYSTORE_PASSWORD)
 acct = Account.from_key(pk)
 
 payer_addr = Web3.to_checksum_address(acct.address)
-balance_before = w3.eth.get_balance(payer_addr)
+balance_before_block = w3.eth.block_number
+balance_before = w3.eth.get_balance(
+    payer_addr, block_identifier=balance_before_block
+)
 
 log("selected payer", payer_addr)
 log("payer_balance_before_wei", balance_before)
@@ -297,7 +300,13 @@ log("waiting_receipt", "timeout=180s")
 
 receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
 
-balance_after = w3.eth.get_balance(payer_addr)
+receipt_block_number = int(receipt["blockNumber"])
+transaction = w3.eth.get_transaction(tx_hash)
+transaction_to = Web3.to_checksum_address(transaction["to"])
+transaction_value = int(transaction["value"])
+balance_after = w3.eth.get_balance(
+    payer_addr, block_identifier=receipt_block_number
+)
 
 gas_used = receipt.get("gasUsed", 0)
 effective_gas_price = receipt.get("effectiveGasPrice", gas_price)
@@ -331,13 +340,17 @@ summary = {
     "tx_hash": tx_hash_hex,
     "status": int(receipt.status),
     "success": bool(success),
+    "transaction_to": transaction_to,
+    "transaction_value_wei": str(transaction_value),
+    "balance_before_block": int(balance_before_block),
     "balance_before_wei": str(balance_before),
+    "balance_after_block": receipt_block_number,
     "balance_after_wei": str(balance_after),
     "deposit_value_wei": str(value),
     "gas_used": int(gas_used),
     "effective_gas_price": str(effective_gas_price),
     "fee_paid_wei": str(fee_paid),
-    "receipt_block_number": int(receipt.get("blockNumber", 0)),
+    "receipt_block_number": receipt_block_number,
 }
 open(RESULT_FILE, "w").write(json.dumps(summary, indent=2, sort_keys=True) + "\n")
 

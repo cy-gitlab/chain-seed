@@ -100,12 +100,18 @@ def deposit_result_is_successful(data: Optional[Dict[str, Any]]) -> bool:
     if not data:
         return False
     try:
+        deposit_value = int(data.get("deposit_value_wei", "0"))
+        fee_paid = int(data.get("fee_paid_wei", "0"))
+        balance_before = int(data.get("balance_before_wei", "0"))
+        balance_after = int(data.get("balance_after_wei", "0"))
         return (
             data.get("success") is True
             and int(data.get("status", 0)) == 1
             and str(data.get("tx_hash", "")).startswith("0x")
-            and int(data.get("deposit_value_wei", "0")) == 32 * 10**18
-            and int(data.get("balance_before_wei", "0")) > int(data.get("balance_after_wei", "0"))
+            and str(data.get("transaction_to", "")).lower() == DEPOSIT_CONTRACT.lower()
+            and int(data.get("transaction_value_wei", "0")) == 32 * 10**18
+            and deposit_value == 32 * 10**18
+            and balance_before - balance_after == deposit_value + fee_paid
         )
     except (TypeError, ValueError):
         return False
