@@ -75,6 +75,9 @@ class PublicImportTests(unittest.TestCase):
         self.assertEqual(image.getName(), "ubuntu:24.04")
 
         self.assertIsInstance(ETHEREUM_POS, SystemProfile)
+        self.assertTrue(ETHEREUM_POS.contains(BaseSystem.SEEDEMU_BASE))
+        self.assertTrue(ETHEREUM_POS.contains(BaseSystem.UBUNTU_24_04))
+        self.assertFalse(BaseSystem.SEEDEMU_BASE.contains(ETHEREUM_POS))
         with self.assertRaises(TypeError):
             pos_node.setBaseSystem("chainseed.ethereum.pos")
 
@@ -107,6 +110,7 @@ class PublicImportTests(unittest.TestCase):
             Node,
             Server,
             Service,
+            SystemProfile,
         )
         from seedemu.layers import Base
 
@@ -155,6 +159,14 @@ class PublicImportTests(unittest.TestCase):
         emulator.render()
         self.assertEqual(host.getBaseSystem(), ETHEREUM_POS)
         self.assertEqual(server.getBaseSystem(), ETHEREUM_POS)
+
+        enhanced_pos = SystemProfile(
+            "test.ethereum.pos.tools", subset=ETHEREUM_POS
+        )
+        emulator, host, server = build(enhanced_pos, ETHEREUM_POS)
+        emulator.render()
+        self.assertEqual(host.getBaseSystem(), enhanced_pos)
+        self.assertEqual(server.getBaseSystem(), enhanced_pos)
 
         emulator = Emulator()
         base = Base()

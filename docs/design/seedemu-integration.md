@@ -118,11 +118,14 @@ cross-service lookup use them. ChainSeed owns its names, including
 | `addPortForwarding(host, container)` | Expose RPC or UI |
 | `setBaseSystem(profile)` | Declare the runtime profile required by a node |
 
-ChainSeed defines exact `SystemProfile` identifiers such as
-`chainseed.ethereum.pos`. During binding, a default SeedEmu host adopts the
-selected server's specific profile. Equal profiles can be reused, while two
-different specific profiles conflict. Architecture, repository, tag, and image
-software metadata stay in `chainseed.compiler` and are not stored on `Node`.
+ChainSeed defines stable `SystemProfile` identifiers such as
+`chainseed.ethereum.pos`. A profile may reference the less specialized runtime
+that its image is based on through `subset`; Ethereum PoS therefore contains
+`BaseSystem.SEEDEMU_BASE`, which in turn contains Ubuntu 24.04. During binding,
+the compatible, more specialized profile is retained. Unrelated concrete
+profiles still conflict. Docker image selection remains an exact profile lookup,
+and architecture, repository, tag, and software metadata stay in
+`chainseed.compiler` rather than on `Node`.
 
 ### Runtime Testing
 

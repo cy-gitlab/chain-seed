@@ -1,13 +1,19 @@
 """Runtime system profiles owned by ChainSeed."""
 
-from seedemu.core import SystemProfile
+from seedemu.core import BaseSystem, SystemProfile
 
 
-ETHEREUM_LEGACY = SystemProfile("chainseed.ethereum.legacy")
-ETHEREUM_POS = SystemProfile("chainseed.ethereum.pos")
-MONERO = SystemProfile("chainseed.monero")
-SOLANA = SystemProfile("chainseed.solana")
-CHAINLINK = SystemProfile("chainseed.chainlink")
+ETHEREUM_LEGACY = SystemProfile(
+    "chainseed.ethereum.legacy", subset=BaseSystem.SEEDEMU_BASE
+)
+ETHEREUM_POS = SystemProfile(
+    "chainseed.ethereum.pos", subset=BaseSystem.SEEDEMU_BASE
+)
+MONERO = SystemProfile("chainseed.monero", subset=BaseSystem.SEEDEMU_BASE)
+SOLANA = SystemProfile("chainseed.solana", subset=BaseSystem.SEEDEMU_BASE)
+CHAINLINK = SystemProfile(
+    "chainseed.chainlink", subset=BaseSystem.UBUNTU_20_04
+)
 
 CHAINSEED_SYSTEMS = (
     ETHEREUM_LEGACY,

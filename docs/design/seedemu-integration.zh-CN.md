@@ -116,10 +116,12 @@ Python entry point 只用于报告已安装扩展和验证制品，不替代显�
 | `addPortForwarding(host, container)` | 暴露 RPC 或界面端口 |
 | `setBaseSystem(profile)` | 声明节点需要的运行 profile |
 
-ChainSeed 定义精确的 `SystemProfile` 标识，例如 `chainseed.ethereum.pos`。
-绑定时，默认 SeedEmu Host 会采用所选 Server 的具体 profile；相同 profile 可以
-复用，两个不同的具体 profile 则冲突。体系结构、镜像仓库、tag 和软件元数据
-保留在 `chainseed.compiler`，不写入 `Node`。
+ChainSeed 定义稳定的 `SystemProfile` 标识，例如 `chainseed.ethereum.pos`。
+profile 可通过 `subset` 指向镜像所基于的较通用运行环境；因此 Ethereum PoS
+包含 `BaseSystem.SEEDEMU_BASE`，而 SeedEmu Base 又包含 Ubuntu 24.04。绑定时
+会保留兼容且更具体的 profile，互不相关的两个具体 profile 仍然冲突。Docker
+镜像选择仍是精确的 profile 查询；体系结构、镜像仓库、tag 和软件元数据保留在
+`chainseed.compiler`，不写入 `Node`。
 
 ### 运行时测试
 
