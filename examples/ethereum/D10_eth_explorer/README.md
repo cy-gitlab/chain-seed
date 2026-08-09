@@ -60,8 +60,8 @@ compiler to the ChainSeed component:
 ```python
 emu.render()
 
-docker = Docker(internetMapEnabled=True, platform=platform)
-EthExplorer(chain_name="pos", port=5000).attach(emu, docker)
+docker = ChainSeedDocker(internetMapEnabled=True, platform=platform)
+docker.enableEthExplorer(chain_name="pos", port=5000)
 
 emu.compile(docker, output, override=True)
 ```
@@ -70,9 +70,11 @@ The `--eth-explorer` and `--no-eth-explorer` command-line options control
 this step. The older `--ether-view` names remain accepted as aliases during
 the migration.
 
-SeedEmu supplies only generic Docker APIs for registering auxiliary Compose
-services and resolving generated network names. SeedEmu does not need to know
-which containers belong to EthExplorer.
+SeedEmu calls a protected additional-services hook while compiling Compose.
+`ChainSeedDocker` overrides the hook, obtains service definitions from
+`EthExplorer`, and resolves the selected emulated network names through its
+inherited compiler helper. SeedEmu does not know which containers belong to
+EthExplorer.
 
 ## Services and networking
 
@@ -118,7 +120,7 @@ handsonsecurity/seedemu-ethexplorer-backend:1.0
 handsonsecurity/seedemu-ethexplorer-web:1.0
 ```
 
-They can be overridden through the `EthExplorer` constructor.
+They can be overridden through `ChainSeedDocker.enableEthExplorer()`.
 
 ## Validation
 
@@ -146,5 +148,5 @@ ClickHouse, Redis, and Bigtable-compatible services become ready.
 If port 5000 is occupied, change the component configuration and recompile:
 
 ```python
-EthExplorer(chain_name="pos", port=5050).attach(emu, docker)
+docker.enableEthExplorer(chain_name="pos", port=5050)
 ```

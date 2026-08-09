@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from seedemu import *
+from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
 import sys, os
 import math, json
@@ -130,8 +131,8 @@ emu.addLayer(eth)
 emu.render()
 
 # Enable the Internet Map and ChainSeed EthExplorer
-docker = Docker(internetMapEnabled=True, platform=platform)
-EthExplorer(chain_name="pos").attach(emu, docker)
+docker = ChainSeedDocker(internetMapEnabled=True, platform=platform)
+docker.enableEthExplorer(chain_name="pos")
 
 # Compile the emulator to output
 emu.compile(docker, './output', override=True)

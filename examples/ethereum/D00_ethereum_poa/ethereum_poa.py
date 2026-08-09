@@ -13,6 +13,7 @@ REPO_ROOT = SCRIPT_DIR.parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from chainseed.compiler import ChainSeedDocker
 from chainseed.common.seedemu_examples import enable_seedemu_examples
 
 enable_seedemu_examples()
@@ -74,7 +75,7 @@ def run(dumpfile = None, hosts_per_as=3, total_eth_nodes=20, total_accounts_per_
         emu.dump(dumpfile)
     else:
         emu.render()
-        docker = Docker(platform=platform)
+        docker = ChainSeedDocker(platform=platform)
         emu.compile(docker, './output', override=True)
 
 if __name__ == "__main__":

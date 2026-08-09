@@ -248,9 +248,9 @@ The example enables both the Internet Map and the Eth Explorer when
 compiling the Docker output.
 
 ```python
-docker = Docker(internetMapEnabled=True, platform=platform)
+docker = ChainSeedDocker(internetMapEnabled=True, platform=platform)
 if ether_view_enabled:
-    EthExplorer(chain_name="pos").attach(emu, docker)
+    docker.enableEthExplorer(chain_name="pos")
 
 emu.compile(docker, output, override=True)
 ```

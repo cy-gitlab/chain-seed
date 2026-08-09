@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from seedemu import *
+from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
 import os 
 
@@ -65,6 +66,6 @@ platform_mapping = {
     "amd": Platform.AMD64,
     "arm": Platform.ARM64
 }
-docker = Docker(platform=platform_mapping[platform])
+docker = ChainSeedDocker(platform=platform_mapping[platform])
 
 emu.compile(docker, './output')

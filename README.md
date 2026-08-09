@@ -31,14 +31,20 @@ compiler refactors do not unnecessarily break the extension.
 This is the first functional extraction from SeedEmu. The copied service
 implementations retain their public behavior while using `chainseed.*` package
 ownership. The extraction does not require SeedEmu to import ChainSeed.
-Coordinated development may add generic extension APIs such as
-`Node.setBaseImage` to SeedEmu, while blockchain implementations, images,
-examples, and protocol tests remain owned by this repository.
+ChainSeed services assign compiler-neutral `SystemProfile` objects through
+SeedEmu's existing `Node.setBaseSystem` API. `ChainSeedDocker` maps those
+ChainSeed-owned profiles to platform-specific images and deployment components. ChainSeed no longer depends on SeedEmu's blockchain image table; blockchain
+implementations, images, examples, and protocol tests are owned by this
+repository. The legacy SeedEmu entries remain temporarily for migration
+validation.
 EthExplorer deployment is also owned by ChainSeed. The Python integration
 lives in `chainseed.ethereum.EthExplorer`, while build recipes remain in
-`images/ethexplorer`. SeedEmu supplies only generic Docker Compose extension
-APIs; its legacy Explorer path is retained temporarily for comparison until the
-ChainSeed path has completed compatibility testing.
+`images/ethexplorer`. SeedEmu supplies protected Docker compiler hooks for subclasses to extend image
+catalogs and contribute auxiliary Compose services. `ChainSeedDocker` overrides
+those hooks and owns all
+EthExplorer service definitions and network attachment. The legacy SeedEmu
+Explorer path is retained temporarily for comparison until migration validation
+is complete.
 
 Generated Compose output, client databases, raw benchmark samples, Xatu input
 datasets, Python caches, and Node package caches are excluded. The extraction
@@ -98,6 +104,7 @@ Use explicit chain imports:
 
 ```python
 from seedemu import Binding, Emulator, Filter
+from chainseed import ChainSeedDocker
 from chainseed.ethereum import ConsensusMechanism, EthereumService
 from chainseed.monero import MoneroService
 from chainseed.solana import SolanaService

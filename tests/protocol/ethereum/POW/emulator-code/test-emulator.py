@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from seedemu import *
+from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
 import os
 
@@ -74,7 +75,7 @@ platform_mapping = {
     "amd": Platform.AMD64,
     "arm": Platform.ARM64
 }
-docker = Docker(platform=platform_mapping[platform])
+docker = ChainSeedDocker(platform=platform_mapping[platform])
 
 # If output directory exists and override is set to false, we call exit(1)
 # updateOutputdirectory will not be called

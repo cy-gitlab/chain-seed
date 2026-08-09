@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from seedemu import *
+from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
 from examples.ethereum.D00_ethereum_poa import ethereum_poa
 from chainseed.ethereum import *
@@ -52,7 +53,7 @@ def run(dumpfile = None):
         else:
             current_platform = Platform.AMD64
 
-        docker = Docker(etherViewEnabled=True, platform=current_platform, internetMapEnabled=False)
+        docker = ChainSeedDocker(etherViewEnabled=True, platform=current_platform, internetMapEnabled=False)
         emu.compile(docker, './output', override = True)
 
 if __name__ == "__main__":

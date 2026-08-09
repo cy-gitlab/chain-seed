@@ -11,6 +11,7 @@ from .EthTemplates import (
     GethCommandTemplates,
 )
 from .EthTemplates.LighthouseCommandTemplates import *
+from ..common.systems import ETHEREUM_LEGACY, ETHEREUM_POS
 
 if TYPE_CHECKING:
     from .EthereumService import Blockchain, EthereumService
@@ -71,6 +72,11 @@ class EthereumServer(Server):
         self._mnemonic, self._account_base_balance, self._account_total = self._blockchain.getEmuAccountParameters()
         self._mnemonic_accounts = EthAccount.createEmulatorAccountsFromMnemonic(self._id, mnemonic=self._mnemonic, balance=self._account_base_balance, total=self._account_total, password="admin")
         self._consensus_mechanism = blockchain.getConsensusMechanism()
+        self.setBaseSystem(
+            ETHEREUM_POS
+            if self._consensus_mechanism == ConsensusMechanism.POS
+            else ETHEREUM_LEGACY
+        )
 
         self._custom_geth_binary_path = None
         self._custom_geth_command_option = None

@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from seedemu import *
+from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
 import sys, os
 import math
@@ -135,7 +136,7 @@ def run(dumpfile = None, total_beacon_nodes=5, vc_per_beacon=3):
         emu.dump(dumpfile)
     else:
         emu.render()
-        docker = Docker(internetMapEnabled=True, etherViewEnabled=True, platform=platform)
+        docker = ChainSeedDocker(internetMapEnabled=True, etherViewEnabled=True, platform=platform)
         emu.compile(docker, './output', override=True)
 
 if __name__ == "__main__":

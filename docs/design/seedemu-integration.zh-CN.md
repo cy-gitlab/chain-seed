@@ -7,9 +7,9 @@
 当前两个配套工作区已经实现：
 
 - 显式导入 ChainSeed，并通过普通的 `Emulator.addLayer()` 完成集成；
-- 通用的 `ImageRef`/`Node.setBaseImage` 编译器边界。
-- 通用的 Docker Compose 服务注册和编译后网络名查询，供 ChainSeed 自有的
-  EthExplorer 部署适配器使用。
+- 通过现有 `Node.setBaseSystem` API 声明 ChainSeed 自有 `SystemProfile`，并由 `ChainSeedDocker` 完成选择；
+- 受保护的 Docker 子类钩子，用于扩展系统镜像目录和附加 Compose 服务，
+  由 `ChainSeedDocker` 及其 EthExplorer 组件使用。
 
 SeedEmu 尚未实现、仍属于计划的内容：
 
@@ -65,7 +65,7 @@ sequenceDiagram
     Emu->>Chain: configure(emulator)
     Chain->>Emu: 解析绑定和层依赖
     Emu->>Chain: render(emulator)
-    Chain->>Node: 声明镜像、文件、标签和命令
+    Chain->>Node: 声明运行系统、文件、标签和命令
     User->>Emu: compile(compiler, output)
     Emu->>Compiler: 编译通用节点模型
 ```
@@ -114,17 +114,12 @@ Python entry point 只用于报告已安装扩展和验证制品，不替代显�
 | `addPersistentStorage(path)` | 声明持久化状态 |
 | `addSharedFolder(host, guest)` | 挂载实验制品 |
 | `addPortForwarding(host, container)` | 暴露 RPC 或界面端口 |
-| `setBaseImage(image_ref)` | 声明外部镜像引用 |
+| `setBaseSystem(profile)` | 声明节点需要的运行 profile |
 
-`setBaseImage` 在节点上保存与编译器无关的 `ImageRef`：
-
-```text
-repository, tag, digest, platform
-```
-
-其中 `repository` 以及 `tag` 或 `digest` 二者之一为必填。正式发布清单
-使用 digest。Docker 专用对象和镜像优先级列表仍是 Docker 编译器的内部
-实现。
+ChainSeed 定义精确的 `SystemProfile` 标识，例如 `chainseed.ethereum.pos`。
+绑定时，默认 SeedEmu Host 会采用所选 Server 的具体 profile；相同 profile 可以
+复用，两个不同的具体 profile 则冲突。体系结构、镜像仓库、tag 和软件元数据
+保留在 `chainseed.compiler`，不写入 `Node`。
 
 ### 运行时测试
 
@@ -184,29 +179,34 @@ flowchart LR
 
 ## 编译器边界
 
-编译器只读取渲染后的通用节点模型，不得导入 ChainSeed，也不得包含
-区块链专用镜像选择逻辑。
+SeedEmu 内置编译器只读取渲染后的通用节点模型，不得导入 ChainSeed，
+也不得包含区块链专用镜像选择逻辑。ChainSeed 通过自己的 `Docker` 子类
+适配其运行系统。
 
 ```mermaid
 flowchart LR
     Service["外部服务"]
     Model["通用 Node 模型"]
-    Docker["Docker 编译器"]
-    Other["其他编译器"]
+    ChainDocker["ChainSeedDocker"]
+    Other["其他兼容编译器"]
     Output["部署制品"]
 
     Service --> Model
-    Model --> Docker
+    Model --> ChainDocker
     Model --> Other
-    Docker --> Output
+    ChainDocker --> Output
     Other --> Output
 ```
 
-Monero 服务原先对编译器内部镜像覆盖接口的调用已经由
-`Node.setBaseImage` 替代。EthExplorer 通过公开的 Docker
-`addComposeService()` 和 `getComposeNetworkName()` 接口添加辅助容器，
-不访问编译器内部状态。这两个接口是通用 Docker 部署能力；SeedEmu 不导入
-ChainSeed，也不了解 Explorer 服务。SeedEmu 中的旧 Explorer 实现仅在迁移
+ChainSeed 服务只写入运行 profile。`ChainSeedDocker` 通过覆写受保护的系统镜像
+目录钩子，加入`（profile，目标平台） -> DockerImage` 映射，并在编译时读取
+Monero 服务目标以处理可选的自定义镜像。
+
+SeedEmu 的 Docker 编译器在组装 Compose 时还会调用一个受保护的附加服务钩子。
+`ChainSeedDocker` 覆写该钩子，从已启用的 ChainSeed 组件收集服务定义，并通过
+继承的受保护方法解析仿真网络名称。该受保护的子类扩展点由 `_getSystemImageCatalog()`、
+`_getAdditionalComposeServices()` 和 `_getRealNetName()` 组成。SeedEmu 不提供
+公开的通用 Compose 注册 API，也不了解 EthExplorer。SeedEmu 中的旧 Explorer 实现仅在迁移
 验证期间暂时保留。
 
 ## 软件包与导入规则
@@ -220,6 +220,7 @@ ChainSeed 本来就应依赖并导入 SeedEmu。这里的边界关注依赖方�
 from seedemu import Binding, Emulator, Filter
 from seedemu.core import Emulator, Node, Service, Server
 from seedemu.compiler import Docker, Platform
+from chainseed.compiler import ChainSeedDocker
 ```
 
 库源码推荐显式导入，这样兼容性变化更容易发现。教学示例可以继续使用
@@ -241,8 +242,8 @@ SeedEmu 公共模块不得导入 `chainseed`、检查 ChainSeed 安装路径或�
 
 1. 固定版本的 ChainSeed 测试夹具可以导入全部公共扩展接口；
 2. 能够渲染最小 Ethereum PoS 拓扑；
-3. 能够使用 Docker 编译器完成编译；
-4. 能够从公开编译制品中验证 ChainSeed 镜像要求。
+3. 能够使用 `ChainSeedDocker` 完成编译；
+4. 能够从公开编译制品中验证所选 ChainSeed 镜像，并确认普通 `Docker` 不会静默接受 ChainSeed 系统名称。
 
 扩展元数据与 dump 功能实现后，测试套件还将：
 

@@ -146,7 +146,9 @@ after at least two chain implementations require the same abstraction.
 |---|---|
 | `extension` | ChainSeed version, SeedEmu API requirement, owned layers and schemas |
 | `common.artifacts` | Typed handoff of genesis, accounts, endpoints and release manifests |
-| `common.images` | Logical role to immutable OCI image resolution |
+| `common.systems` | Compiler-neutral runtime system profiles |
+| `compiler.images` | Platform-specific OCI image mappings |
+| `compiler.ChainSeedDocker` | ChainSeed image selection and deployment components |
 | `common.labels` | Versioned node discovery and observability labels |
 | `common.runtime` | Shared process-start and readiness declarations |
 | `ethereum.service` | PoW/PoA/PoS network lifecycle and virtual-role binding |
@@ -214,14 +216,17 @@ ChainSeed depends on a small public surface rather than compiler internals.
 | Node specification | software, files, build commands, start commands, labels, storage, ports |
 | Network model | AS/network lookup, addresses, interfaces, bindings and filters |
 | Artifact exchange | register generated files and expose them to dependent services |
-| Base image selection | select an immutable image reference without constructing compiler-private objects |
+| Runtime system selection | store a ChainSeed-owned `SystemProfile` through `Node.setBaseSystem` |
+| Docker subclass seam | extend system-image catalogs and contribute auxiliary Compose services through protected hooks |
 | Runtime testing | list containers, inspect labels, enter namespaces, execute probes |
 | Extension metadata | name, version, SeedEmu API version, owned layer names |
 
-The base-image operation is a required SeedEmu core change. Chain services
-must not create `DockerImage` objects or call compiler-specific image override
-methods. The node model should carry an image reference; each compiler decides
-how to realize it.
+Chain services do not construct `DockerImage` objects. They store only a logical runtime profile. `ChainSeedDocker` is the compiler-side adapter that owns image objects, platform mappings, and optional per-deployment overrides.
+
+The protected subclass contract currently consists of
+`_getSystemImageCatalog()`, `_getAdditionalComposeServices()`, and the inherited
+`_getRealNetName()` helper. These are extension seams for compiler subclasses, not
+operations exposed on `Node` or a public service-registration API.
 
 The public import style is explicit:
 

@@ -31,7 +31,8 @@ if (REPO_ROOT / "seedemu").is_dir():
     sys.path.insert(0, str(REPO_ROOT))
 
 from seedemu import Binding, Filter, Makers
-from seedemu.compiler import Docker, Platform
+from seedemu.compiler import Platform
+from chainseed.compiler import ChainSeedDocker
 from chainseed.solana import SolanaService
 
 
@@ -114,5 +115,5 @@ emu.render()
 
 ###############################################################################
 # Compile docker-compose and the build context into ./output.
-docker = Docker(internetMapEnabled=True, platform=platform)
+docker = ChainSeedDocker(internetMapEnabled=True, platform=platform)
 emu.compile(docker, str(EXAMPLE_DIR / "output"), override=True)

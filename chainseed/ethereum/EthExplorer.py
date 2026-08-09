@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Mapping, Tuple
+from typing import Callable, Dict, Mapping, Tuple
 
-from seedemu.compiler import Docker
 from seedemu.core import Emulator, Network, Node
 from seedemu.core.enums import NetworkType
 
@@ -60,13 +59,17 @@ class EthExplorer:
         self.__backend_image = backend_image
         self.__web_image = web_image
 
-    def attach(self, emulator: Emulator, compiler: Docker) -> Docker:
-        """Register the Explorer's auxiliary Compose services on a Docker compiler."""
+    def getComposeServices(
+        self,
+        emulator: Emulator,
+        network_name: Callable[[Network], str],
+    ) -> Mapping[str, Dict[str, object]]:
+        """Build the Explorer's auxiliary Compose service definitions."""
 
         if not isinstance(emulator, Emulator):
             raise TypeError("emulator must be an Emulator")
-        if not isinstance(compiler, Docker):
-            raise TypeError("compiler must be a Docker compiler")
+        if not callable(network_name):
+            raise TypeError("network_name must be callable")
         if not emulator.rendered():
             raise RuntimeError("the emulator must be rendered before attaching EthExplorer")
 
@@ -81,18 +84,15 @@ class EthExplorer:
 
         emulated_networks = []
         for network in (geth_endpoint.network, beacon_endpoint.network):
-            name = compiler.getComposeNetworkName(network)
+            name = network_name(network)
             if name not in emulated_networks:
                 emulated_networks.append(name)
 
-        for name, service in self.__services(
+        return self.__services(
             geth_endpoint.address,
             beacon_endpoint.address,
             tuple(emulated_networks),
-        ).items():
-            compiler.addComposeService(name, service)
-
-        return compiler
+        )
 
     def __select_target(self, ethereum: EthereumService, server_type, role: str) -> Node:
         targets = [

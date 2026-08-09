@@ -144,7 +144,9 @@ chain-seed/
 |---|---|
 | `extension` | ChainSeed 版本、SeedEmu API 要求、层名称和模式版本 |
 | `common.artifacts` | Genesis、账户、端点和发布清单的类型化传递 |
-| `common.images` | 将逻辑角色解析为不可变 OCI 镜像 |
+| `common.systems` | 与编译器无关的运行系统 profile |
+| `compiler.images` | 各目标平台的 OCI 镜像映射 |
+| `compiler.ChainSeedDocker` | ChainSeed 镜像选择与部署组件 |
 | `common.labels` | 节点发现与可观测性的版本化标签 |
 | `common.runtime` | 通用进程启动和就绪声明 |
 | `ethereum.service` | PoW、PoA、PoS 网络生命周期和虚拟角色绑定 |
@@ -211,13 +213,17 @@ ChainSeed 只依赖一组较小的公共接口，不依赖编译器内部实现�
 | Node 规格 | 软件、文件、构建命令、启动命令、标签、存储、端口 |
 | 网络模型 | AS/网络查询、地址、接口、绑定和过滤 |
 | 制品交换 | 注册生成文件并提供给依赖服务 |
-| 基础镜像选择 | 不创建编译器私有对象即可选择不可变镜像 |
-| 运行时测试 | 容器列表、标签、命名空间、命令和探针 |
+| 运行系统选择 | 通过 `Node.setBaseSystem` 保存 ChainSeed 自有 `SystemProfile` |
+| Docker 子类扩展点 | 通过受保护钩子扩展系统镜像目录并提供附加 Compose 服务 || 运行时测试 | 容器列表、标签、命名空间、命令和探针 |
 | 扩展元数据 | 名称、版本、SeedEmu API 版本和层名称 |
 
-基础镜像操作是必须增加的 SeedEmu 核心接口。区块链服务不得构造
-`DockerImage` 或调用编译器专用的镜像覆盖方法。节点模型只保存镜像
-引用，由每种编译器决定如何实现。
+区块链服务不构造 `DockerImage`，只保存逻辑运行 profile。
+`ChainSeedDocker` 是编译器侧适配器，负责镜像对象、平台映射以及可选的
+单次部署覆盖。
+
+当前受保护的子类契约包括 `_getSystemImageCatalog()`、
+`_getAdditionalComposeServices()` 和继承的 `_getRealNetName()` 辅助方法。
+它们是编译器子类扩展点，不会暴露到 `Node`，也不是公开的服务注册 API。
 
 公共导入方式必须显式：
 

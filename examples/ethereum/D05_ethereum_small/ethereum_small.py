@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from seedemu import *
+from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
 import os, sys
 
@@ -108,7 +109,7 @@ def run(dumpfile = None, total_hosts=15, total_eth_nodes=10):
         emu.dump(dumpfile)
     else:
         emu.render()
-        docker = Docker(platform=platform)
+        docker = ChainSeedDocker(platform=platform)
         emu.compile(docker, './output', override=True)
 
 if __name__ == "__main__":

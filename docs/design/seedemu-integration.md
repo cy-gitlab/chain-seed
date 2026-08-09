@@ -7,9 +7,9 @@
 Currently implemented in the coordinated working trees:
 
 - explicit ChainSeed imports and ordinary `Emulator.addLayer()` integration;
-- the generic `ImageRef`/`Node.setBaseImage` compiler boundary.
-- generic Docker Compose service registration and compiled-network name lookup,
-  used by the ChainSeed-owned EthExplorer deployment adapter.
+- ChainSeed-owned `SystemProfile` objects selected by `ChainSeedDocker` through the existing `Node.setBaseSystem` API;
+- protected Docker subclass hooks for system-image catalogs and additional Compose
+  services, used by `ChainSeedDocker` and its EthExplorer component.
 
 Planned, but not yet implemented by SeedEmu:
 
@@ -65,7 +65,7 @@ sequenceDiagram
     Emu->>Chain: configure(emulator)
     Chain->>Emu: Resolve bindings and dependencies
     Emu->>Chain: render(emulator)
-    Chain->>Node: Declare image, files, labels and commands
+    Chain->>Node: Declare runtime system, files, labels and commands
     User->>Emu: compile(compiler, output)
     Emu->>Compiler: Compile generic node model
 ```
@@ -116,17 +116,13 @@ cross-service lookup use them. ChainSeed owns its names, including
 | `addPersistentStorage(path)` | Declare persistent state |
 | `addSharedFolder(host, guest)` | Mount an experiment artifact |
 | `addPortForwarding(host, container)` | Expose RPC or UI |
-| `setBaseImage(image_ref)` | Declare an external image reference |
+| `setBaseSystem(profile)` | Declare the runtime profile required by a node |
 
-`setBaseImage` stores a compiler-neutral `ImageRef` on the node:
-
-```text
-repository, tag, digest, platform
-```
-
-Only `repository` and either `tag` or `digest` are required. Release manifests
-use digests. Docker-specific objects and image-priority lists remain private to
-the Docker compiler.
+ChainSeed defines exact `SystemProfile` identifiers such as
+`chainseed.ethereum.pos`. During binding, a default SeedEmu host adopts the
+selected server's specific profile. Equal profiles can be reused, while two
+different specific profiles conflict. Architecture, repository, tag, and image
+software metadata stay in `chainseed.compiler` and are not stored on `Node`.
 
 ### Runtime Testing
 
@@ -188,30 +184,35 @@ external service repositories.
 
 ## Compiler Boundary
 
-The compiler consumes only the rendered generic node model. It must not import
-ChainSeed or contain chain-specific image selection.
+SeedEmu's built-in compilers consume only the rendered generic node model and
+must not import ChainSeed or contain chain-specific image selection. ChainSeed
+provides its own `Docker` subclass as the adapter for its runtime systems.
 
 ```mermaid
 flowchart LR
     Service["External service"]
     Model["Generic Node model"]
-    Docker["Docker compiler"]
-    Other["Other compiler"]
+    ChainDocker["ChainSeedDocker"]
+    Other["Other compatible compiler"]
     Output["Deployment artifact"]
 
     Service --> Model
-    Model --> Docker
+    Model --> ChainDocker
     Model --> Other
-    Docker --> Output
+    ChainDocker --> Output
     Other --> Output
 ```
 
-The compiler-specific Monero image override is replaced by
-`Node.setBaseImage`. EthExplorer uses the public Docker
-`addComposeService()` and `getComposeNetworkName()` operations to contribute
-auxiliary containers without accessing compiler state. These operations are
-generic Docker deployment primitives: SeedEmu neither imports ChainSeed nor
-contains knowledge of Explorer services. The legacy SeedEmu Explorer
+ChainSeed services write only a runtime profile. `ChainSeedDocker` extends the
+protected system-image catalog hook with the `(profile, platform) -> DockerImage`
+mapping and inspects Monero targets for the optional custom-image override.
+
+SeedEmu's Docker compiler also calls a protected additional-services hook while
+assembling Compose output. `ChainSeedDocker` overrides it, asks enabled ChainSeed
+components for service definitions, and resolves emulated network names through
+the inherited protected helper. The protected subclass seam consists of `_getSystemImageCatalog()`,
+`_getAdditionalComposeServices()`, and `_getRealNetName()`. There is no public
+generic Compose registration API and SeedEmu contains no EthExplorer knowledge. The legacy SeedEmu Explorer
 implementation remains temporarily available only during migration validation.
 
 ## Package and Import Rules
@@ -225,6 +226,7 @@ Allowed:
 from seedemu import Binding, Emulator, Filter
 from seedemu.core import Emulator, Node, Service, Server
 from seedemu.compiler import Docker, Platform
+from chainseed.compiler import ChainSeedDocker
 ```
 
 Explicit imports are preferred in library code because they make compatibility
@@ -249,8 +251,8 @@ to:
 
 1. import all public extension interfaces;
 2. render a minimal Ethereum PoS topology;
-3. compile it with the Docker compiler;
-4. verify ChainSeed image requirements in public compiler output.
+3. compile it with `ChainSeedDocker`;
+4. verify the selected ChainSeed image in public compiler output and confirm that ordinary `Docker` does not silently accept ChainSeed system names.
 
 When the planned extension metadata and dump work lands, the suite will also:
 

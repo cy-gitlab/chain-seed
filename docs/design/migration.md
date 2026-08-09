@@ -38,7 +38,7 @@ import, checkout step, or blockchain-specific compatibility job.
 ### 2. Prepare SeedEmu
 
 1. Publish the extension API used by `Layer`, `Service`, `Server`, and `Node`.
-2. Add compiler-neutral base-image references to the node model.
+2. Introduce compiler-neutral `SystemProfile` objects through the existing node base-system API.
 3. Add extension descriptors and the versioned dump envelope.
 4. Keep generic runtime probes in `seedemu.testing`.
 5. Expose candidate revisions and stable extension API metadata for external

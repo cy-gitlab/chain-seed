@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from seedemu import *
+from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
 from chainseed.chainlink import *
 from chainseed.chainlink.ChainlinkTemplates import *
@@ -77,7 +78,7 @@ def run(dumpfile = None, total_chainlink_nodes = 3):
     else:
         emu.render()
 
-        docker = Docker(platform=platform)
+        docker = ChainSeedDocker(platform=platform)
         emu.compile(docker, './output', override = True)
 
     print("-----------------------------------------")

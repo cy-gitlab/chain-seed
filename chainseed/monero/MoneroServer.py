@@ -18,6 +18,7 @@ from .MoneroEnum import (
     MoneroSeedConnectionMode,
     MoneroWalletMode,
 )
+from ..common.systems import MONERO
 from .MoneroUtil import (
     MoneroBinaryPaths,
     MoneroNodeOptions,
@@ -38,6 +39,11 @@ class MoneroBaseServer(Server):
         self._serial = serial
         self._network = network
         self._options = options
+        if (
+            network.getCustomBaseImage()
+            or options.binary_source == MoneroBinarySource.MIRROR
+        ):
+            self.setBaseSystem(MONERO)
 
         # Runtime binding information (populated during configure phase)
         self._resolved_ip: Optional[str] = None

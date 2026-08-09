@@ -6,6 +6,7 @@ from seedemu.core.Node import Node
 from seedemu.core.Service import Server
 
 from .SolanaEnum import SolanaNodeRole
+from ..common.systems import SOLANA
 
 
 # Default ports for a Solana node. RPC/pubsub/gossip/faucet match the upstream
@@ -31,6 +32,7 @@ class SolanaServer(Server):
 
     def __init__(self, network: "SolanaNetwork", role: SolanaNodeRole):
         super().__init__()
+        self.setBaseSystem(SOLANA)
         self._network = network
         self._role = role
 

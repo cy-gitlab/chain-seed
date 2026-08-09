@@ -7,7 +7,6 @@ from seedemu.core.Node import Node
 from seedemu.core.Service import Server, Service
 from seedemu.core.enums import NetworkType
 
-from ..common.images import SOLANA_IMAGES, apply_base_images
 from .SolanaEnum import SolanaNodeRole, SolanaNetworkType
 from .SolanaServer import SolanaServer, SolanaBootstrapServer, SolanaValidatorServer
 
@@ -23,8 +22,8 @@ class SolanaService(Service):
     cluster's bootstrap node; during *render* each server installs the real
     Agave toolchain onto its physical node.
 
-    Nodes declare the ``seedemu-solana`` image through SeedEmu's generic image
-    contract. The image ships the pinned Agave binaries (see
+    Nodes declare the ChainSeed Solana runtime system. `ChainSeedDocker` maps it
+    to the platform-specific image containing the pinned Agave binaries (see
     docker_images/seedemu-solana).
     """
 
@@ -55,7 +54,6 @@ class SolanaService(Service):
         super().configure(emulator)
 
     def _doInstall(self, node: Node, server: Server):
-        apply_base_images(node, SOLANA_IMAGES)
         self._log("install {} on as{}/{}".format(
             server.__class__.__name__, node.getAsn(), node.getName()))
         super()._doInstall(node, server)

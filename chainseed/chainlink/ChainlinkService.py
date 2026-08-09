@@ -5,7 +5,7 @@ from ..ethereum import EthereumServer, EthUtilityServer
 from .ChainlinkTemplates import *
 from .ChainlinkBaseServer import *
 from .ChainlinkUserServer import *
-from ..common.images import CHAINLINK_IMAGES, apply_base_images
+from ..common.systems import CHAINLINK
 import re
 
 class ChainlinkServer(ChainlinkBaseServer):
@@ -22,6 +22,7 @@ class ChainlinkServer(ChainlinkBaseServer):
         @brief ChainlinkServer Constructor.
         """
         super().__init__()
+        self.setBaseSystem(CHAINLINK)
 
     def setName(self, name: str):
         """
@@ -33,8 +34,6 @@ class ChainlinkServer(ChainlinkBaseServer):
         """
         @brief Install the service.
         """
-
-        apply_base_images(node, CHAINLINK_IMAGES)
 
         self.__installSoftware(node)
         self.__installConfigurationFiles(node)

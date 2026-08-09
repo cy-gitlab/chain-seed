@@ -28,12 +28,15 @@ ChainSeed 可以导入 `seedemu` 已公开且有文档约束的 API。反方向�
 
 这是从 SeedEmu 提取出的第一版可运行实现。复制后的服务保持原有公开行为，
 但 Python 包归属改为 `chainseed.*`。拆分不要求 SeedEmu 导入 ChainSeed。
-联合开发可以向 SeedEmu 增加 `Node.setBaseImage` 这样的通用扩展接口，但
-区块链实现、镜像、示例和协议测试仍由本仓库负责。
+ChainSeed 服务通过 SeedEmu 现有的 `Node.setBaseSystem` API 声明与编译器无关的
+`SystemProfile`；`ChainSeedDocker` 再把 ChainSeed 自有 profile 映射为对应平台的
+镜像和部署组件。ChainSeed 不再依赖 SeedEmu 的区块链镜像表；区块链实现、
+镜像、示例和协议测试由本仓库负责。SeedEmu 中的旧条目仅为迁移验证暂时保留。
 EthExplorer 部署也由 ChainSeed 负责：Python 集成位于
 `chainseed.ethereum.EthExplorer`，镜像配方保留在 `images/ethexplorer`。
-SeedEmu 只提供通用的 Docker Compose 扩展接口；在 ChainSeed 路径完成兼容性
-验证前，SeedEmu 中的旧 Explorer 路径暂时保留用于对照。
+SeedEmu 只为编译器子类提供受保护的 Compose 附加服务钩子；`ChainSeedDocker`
+覆写该钩子，并完整拥有 EthExplorer 服务定义与网络接入。在迁移验证完成前，
+SeedEmu 中的旧 Explorer 路径暂时保留用于对照。
 
 仓库不复制生成的 Compose 输出、客户端数据库、大规模原始采样、Xatu 输入
 数据、Python 缓存和 Node 依赖缓存。来源与排除项记录在
@@ -90,6 +93,7 @@ ChainSeed 会通过已安装的 `seedemu` 包定位这些模块，因此 SeedEmu
 
 ```python
 from seedemu import Binding, Emulator, Filter
+from chainseed import ChainSeedDocker
 from chainseed.ethereum import ConsensusMechanism, EthereumService
 from chainseed.monero import MoneroService
 from chainseed.solana import SolanaService

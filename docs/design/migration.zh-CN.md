@@ -37,7 +37,7 @@
 ### 2. 准备 SeedEmu
 
 1. 发布 `Layer`、`Service`、`Server` 和 `Node` 使用的扩展 API。
-2. 在节点模型中加入与编译器无关的基础镜像引用。
+2. 通过现有节点基础系统 API 引入与编译器无关的 `SystemProfile` 对象。
 3. 加入扩展描述符和带版本的 dump 封装。
 4. 仅在 `seedemu.testing` 中保留通用运行时探针。
 5. 对外提供候选 revision 和稳定扩展 API 元数据，供使用方测试。

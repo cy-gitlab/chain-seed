@@ -4,12 +4,10 @@ import os
 from typing import Dict, Iterator, List, Optional, Tuple
 
 from seedemu.core.Emulator import Emulator
-from seedemu.core.ImageRef import ImageRef
 from seedemu.core.Node import Node
 from seedemu.core.Service import Server, Service
 from seedemu.core.enums import NetworkType
 
-from ..common.images import MONERO_IMAGES, apply_base_images
 from .MoneroEnum import (
     MoneroBinarySource,
     MoneroMiningTrigger,
@@ -19,6 +17,7 @@ from .MoneroEnum import (
     MoneroSeedConnectionMode,
 )
 from .MoneroServer import MoneroBaseServer, MoneroFullNodeServer, MoneroLightNodeServer
+from ..common.systems import MONERO
 from .MoneroUtil import (
     MoneroNetworkDefaults,
     MoneroNodeOptions,
@@ -71,13 +70,6 @@ class MoneroService(Service):
             node: Physical node to deploy onto.
             server: Service-specific server instance responsible for rendering.
         """
-
-        if isinstance(server, MoneroBaseServer):
-            network = server.network
-            if network._defaults.custom_base_image:
-                node.setBaseImage(ImageRef.parse(network._defaults.custom_base_image))
-            elif server.getBinarySource() == MoneroBinarySource.MIRROR:
-                apply_base_images(node, MONERO_IMAGES)
 
         self.log(f"install {server.__class__.__name__} on as{node.getAsn()}/{node.getName()}")
 
@@ -228,6 +220,10 @@ class MoneroNetwork:
         self._defaults.use_default_seed_nodes = enabled
         return self
 
+    def getCustomBaseImage(self) -> Optional[str]:
+        """Return the optional compiler image override for this network."""
+        return self._defaults.custom_base_image
+
     def setCustomBaseImage(self, image_name: str) -> "MoneroNetwork":
         """Set a custom base Docker image for all Monero nodes in this network.
         
@@ -253,6 +249,8 @@ class MoneroNetwork:
             >>> emu.compile(docker, './output')
         """
         self._defaults.custom_base_image = image_name
+        for server in self._nodes.values():
+            server.setBaseSystem(MONERO)
         return self
 
     def setDefaultWalletTemplate(self, spec: MoneroWalletSpec) -> "MoneroNetwork":
