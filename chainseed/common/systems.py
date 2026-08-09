@@ -11,9 +11,7 @@ ETHEREUM_POS = SystemProfile(
 )
 MONERO = SystemProfile("chainseed.monero", subset=BaseSystem.SEEDEMU_BASE)
 SOLANA = SystemProfile("chainseed.solana", subset=BaseSystem.SEEDEMU_BASE)
-CHAINLINK = SystemProfile(
-    "chainseed.chainlink", subset=BaseSystem.UBUNTU_20_04
-)
+CHAINLINK = SystemProfile("chainseed.chainlink")
 
 CHAINSEED_SYSTEMS = (
     ETHEREUM_LEGACY,

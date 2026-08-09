@@ -31,6 +31,7 @@ class PublicImportTests(unittest.TestCase):
 
     def test_chainseed_docker_system_mapping(self):
         from chainseed.common.systems import (
+            CHAINLINK,
             CHAINSEED_SYSTEMS,
             ETHEREUM_LEGACY,
             ETHEREUM_POS,
@@ -78,6 +79,7 @@ class PublicImportTests(unittest.TestCase):
         self.assertTrue(ETHEREUM_POS.contains(BaseSystem.SEEDEMU_BASE))
         self.assertTrue(ETHEREUM_POS.contains(BaseSystem.UBUNTU_24_04))
         self.assertFalse(BaseSystem.SEEDEMU_BASE.contains(ETHEREUM_POS))
+        self.assertFalse(CHAINLINK.contains(BaseSystem.UBUNTU_24_04))
         with self.assertRaises(TypeError):
             pos_node.setBaseSystem("chainseed.ethereum.pos")
 

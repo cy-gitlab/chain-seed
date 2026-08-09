@@ -121,8 +121,10 @@ cross-service lookup use them. ChainSeed owns its names, including
 ChainSeed defines stable `SystemProfile` identifiers such as
 `chainseed.ethereum.pos`. A profile may reference the less specialized runtime
 that its image is based on through `subset`; Ethereum PoS therefore contains
-`BaseSystem.SEEDEMU_BASE`, which in turn contains Ubuntu 24.04. During binding,
-the compatible, more specialized profile is retained. Unrelated concrete
+`BaseSystem.SEEDEMU_BASE`, which in turn contains Ubuntu 24.04.
+ChainSeed declares only verified image relationships; the incomplete Chainlink
+image currently has no `subset` relationship. During binding, the compatible,
+more specialized profile is retained. Unrelated concrete
 profiles still conflict. Docker image selection remains an exact profile lookup,
 and architecture, repository, tag, and software metadata stay in
 `chainseed.compiler` rather than on `Node`.
