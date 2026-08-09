@@ -77,9 +77,9 @@ class PublicImportTests(unittest.TestCase):
 
         self.assertIsInstance(ETHEREUM_POS, SystemProfile)
         self.assertTrue(ETHEREUM_POS.contains(BaseSystem.SEEDEMU_BASE))
-        self.assertTrue(ETHEREUM_POS.contains(BaseSystem.UBUNTU_24_04))
+        self.assertTrue(ETHEREUM_POS.contains(BaseSystem.UBUNTU_20_04))
         self.assertFalse(BaseSystem.SEEDEMU_BASE.contains(ETHEREUM_POS))
-        self.assertFalse(CHAINLINK.contains(BaseSystem.UBUNTU_24_04))
+        self.assertFalse(CHAINLINK.contains(BaseSystem.UBUNTU_20_04))
         with self.assertRaises(TypeError):
             pos_node.setBaseSystem("chainseed.ethereum.pos")
 

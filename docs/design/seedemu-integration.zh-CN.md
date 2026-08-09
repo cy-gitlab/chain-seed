@@ -118,7 +118,7 @@ Python entry point 只用于报告已安装扩展和验证制品，不替代显�
 
 ChainSeed 定义稳定的 `SystemProfile` 标识，例如 `chainseed.ethereum.pos`。
 profile 可通过 `subset` 指向镜像所基于的较通用运行环境；因此 Ethereum PoS
-包含 `BaseSystem.SEEDEMU_BASE`，而 SeedEmu Base 又包含 Ubuntu 24.04。
+包含 `BaseSystem.SEEDEMU_BASE`，而 SeedEmu Base 又包含 Ubuntu 20.04。
 只声明已经确认的镜像继承关系；尚未完善的 Chainlink 镜像目前不设置 `subset`。
 绑定时会保留兼容且更具体的 profile，互不相关的两个具体 profile 仍然冲突。Docker
 镜像选择仍是精确的 profile 查询；体系结构、镜像仓库、tag 和软件元数据保留在
