@@ -1,7 +1,10 @@
 """Blockchain extensions for SeedEmu."""
 
+from .extension import ChainSeedExtension, check_seedemu_compatibility, descriptor
+
+check_seedemu_compatibility()
+
 from .compiler import ChainSeedDocker
-from .extension import ChainSeedExtension, descriptor
 
 __version__ = descriptor.version
 

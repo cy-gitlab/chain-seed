@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from chainseed.ethereum import *
 from .EthEnum import ConsensusMechanism, EthUnit
 from .EthUtil import Genesis, EthAccount, AccountStructure
 from .EthereumServer import EthereumServer, PoAServer, PoSBeaconServer, PoSBeaconSetupServer, PoSGethServer, PoWServer, PoSVcServer,PoSServer

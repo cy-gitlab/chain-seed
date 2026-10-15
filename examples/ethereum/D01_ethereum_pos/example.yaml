@@ -88,7 +88,7 @@ probes:
     type: ethereum-exec
     class_contains: Ethereum-POS-Beacon
     consensus: POS
-    command: "pgrep -af 'lighthouse.* bn ' >/dev/null"
+    command: "pgrep -af '[l]ighthouse.* bn ' >/dev/null"
     retries: 30
     interval: 3
 
@@ -97,7 +97,7 @@ probes:
     class_contains: Ethereum-POS-Validator
     role: validator_at_genesis
     consensus: POS
-    command: "pgrep -af 'lighthouse.* vc ' >/dev/null"
+    command: "pgrep -af '[l]ighthouse.* vc ' >/dev/null"
     retries: 30
     interval: 3
 

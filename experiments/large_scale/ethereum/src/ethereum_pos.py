@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from chainseed.compiler import ChainSeedDocker
+from chainseed.common.systems import ETHEREUM_POS
 import argparse
 import json
 import re
@@ -484,7 +486,7 @@ def add_ethereum_pos_layer(
         )
         # Reuse the Ethereum POS base image so tool nodes do not rebuild
         # python3/python3-pip with apt in every generated output.
-        faucet.setBaseSystem(BaseSystem.SEEDEMU_ETHEREUM_POS)
+        faucet.setBaseSystem(ETHEREUM_POS)
         faucet.setDisplayName("Faucet")
         faucet.addHostName(f"faucet{DOMAIN}")
         _bind(emu, "faucet", placements["faucet"])
@@ -495,7 +497,7 @@ def add_ethereum_pos_layer(
             linked_eth_node=linked_geth,
             linked_faucet_node="faucet",
         )
-        util_server.setBaseSystem(BaseSystem.SEEDEMU_ETHEREUM_POS)
+        util_server.setBaseSystem(ETHEREUM_POS)
         util_server.setDisplayName("UtilityServer")
         util_server.addHostName(f"utility{DOMAIN}")
         _bind(emu, "utility", placements["utility"])
@@ -522,7 +524,7 @@ def _dedupe_etherview_networks(output: str) -> None:
     for line in lines:
         stripped = line.strip()
 
-        if line.startswith("    ") and not line.startswith("        ") and stripped.endswith(":"):
+        if len(line) - len(line.lstrip()) == 4 and stripped.endswith(":"):
             current_service = stripped[:-1]
             in_target_networks = False
             seen_networks = set()
@@ -548,7 +550,7 @@ def _compose_service_blocks(compose_path: Path) -> List[List[str]]:
 
     for line in compose_path.read_text().splitlines():
         stripped = line.strip()
-        if line.startswith("    ") and not line.startswith("        ") and stripped.endswith(":"):
+        if len(line) - len(line.lstrip()) == 4 and stripped.endswith(":"):
             if current_block:
                 blocks.append(current_block)
             current_block = [line]
@@ -560,14 +562,17 @@ def _compose_service_blocks(compose_path: Path) -> List[List[str]]:
 
 
 def _etherview_host(compose_path: Path, env_name: str) -> Optional[str]:
-    current_service: Optional[str] = None
-    for line in compose_path.read_text().splitlines():
-        stripped = line.strip()
-        if line.startswith("    ") and not line.startswith("        ") and stripped.endswith(":"):
-            current_service = stripped[:-1]
-            continue
-        if current_service == "seedemu-ethexplorer-backend" and stripped.startswith(f"- {env_name}="):
-            return stripped.split("=", 1)[1]
+    import yaml
+
+    compose = yaml.safe_load(compose_path.read_text())
+    environment = compose.get("services", {}).get(
+        "seedemu-ethexplorer-backend", {}
+    ).get("environment", [])
+    if isinstance(environment, dict):
+        return environment.get(env_name)
+    for entry in environment:
+        if entry.startswith(f"{env_name}="):
+            return entry.split("=", 1)[1]
     return None
 
 
@@ -1157,11 +1162,12 @@ def run(
         return emu
 
     emu.render()
-    docker = Docker(
+    docker = ChainSeedDocker(
         internetMapEnabled=internet_map,
-        etherViewEnabled=ether_view,
         platform=platform,
     )
+    if ether_view:
+        docker.enableEthExplorer(chain_name="pos-large")
     emu.compile(docker, output, override=True)
     _patch_validator_key_distribution(
         output,

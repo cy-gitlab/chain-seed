@@ -42,10 +42,14 @@ checksum, schema version, and generator commit.
 
 ## Known compatibility debt
 
-The coordinated SeedEmu branch now exposes the compiler-neutral
-`Node.setBaseImage(ImageRef)` contract and generic Docker Compose service
-registration used by ChainSeed. ChainSeed no longer uses Docker's private image
-override implementation, and EthExplorer deployment is now contributed by
-`chainseed.ethereum.EthExplorer`. The original SeedEmu blockchain services
-and Explorer code remain temporarily available for comparison and will be
-removed only after the extracted path passes the agreed compatibility gate.
+The coordinated SeedEmu `chainseed` branch exposes extension API 1:
+compiler-neutral `SystemProfile` objects through `Node.setBaseSystem`, plus
+protected Docker hooks for system-image catalogs and additional Compose services.
+ChainSeed uses the public `setImageOverride` method for custom Monero images;
+EthExplorer deployment is contributed by `chainseed.ethereum.EthExplorer`.
+The original SeedEmu blockchain services and Explorer code have been removed
+after static ownership, installation and compilation checks. Docker runtime
+validation remains pending. File-level provenance is recorded in
+`docs/migration-inventory.json`; historical source is retained under
+`experiments/legacy`. Four large historical binaries/archives are excluded from
+the new repository and recorded with checksums and their original Git revision.

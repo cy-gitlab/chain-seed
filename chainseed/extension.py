@@ -16,7 +16,7 @@ class ChainSeedExtension:
 
 
 descriptor = ChainSeedExtension(
-    distribution="chain-seed",
+    distribution="chainseed",
     version="0.1.0a0",
     extension_api_version=1,
     seedemu_min_version="0.0.7",
@@ -28,4 +28,21 @@ descriptor = ChainSeedExtension(
     ),
     artifact_schema_versions=("chainseed.labels/v1",),
 )
+
+
+def check_seedemu_compatibility() -> None:
+    """Check the SeedEmu capabilities used by the blockchain plugin."""
+    from seedemu import core
+    from seedemu.compiler import Docker
+
+    if (
+        not hasattr(core, "SystemProfile")
+        or not callable(getattr(Docker, "_getSystemImageCatalog", None))
+        or not callable(getattr(Docker, "_getAdditionalComposeServices", None))
+    ):
+        raise RuntimeError(
+            "chainseed requires SeedEmu SystemProfile and Docker extension hooks; "
+            "install SeedEmu from the Docker branch. The distribution "
+            "version alone does not identify these capabilities."
+        )
 

@@ -4,6 +4,11 @@
 
 ## 实现状态
 
+ChainSEED 当前适配SeedEmu `Docker` 分支，发行版本为
+`0.0.7`。导入时直接检查 `SystemProfile` 和 Docker 扩展钩子；SeedEmu
+没有导出 `EXTENSION_API_VERSION`。上游仍保留旧区块链实现。共享网络定义
+位于 D00 的 `mini_internet.py`，支持未 render 的网络 bin 导出。
+
 当前两个配套工作区已经实现：
 
 - 显式导入 ChainSeed，并通过普通的 `Emulator.addLayer()` 完成集成；
@@ -20,7 +25,7 @@ SeedEmu 尚未实现、仍属于计划的内容：
 下文描述目标契约。上述计划功能在代码落地前，不应被文档或测试视为已经
 可用。
 
-## 拆分后的 SeedEmu
+## 计划中的 SeedEmu 拆分结构
 
 ```text
 seedemu/
@@ -209,8 +214,8 @@ SeedEmu 的 Docker 编译器在组装 Compose 时还会调用一个受保护的�
 `ChainSeedDocker` 覆写该钩子，从已启用的 ChainSeed 组件收集服务定义，并通过
 继承的受保护方法解析仿真网络名称。该受保护的子类扩展点由 `_getSystemImageCatalog()`、
 `_getAdditionalComposeServices()` 和 `_getRealNetName()` 组成。SeedEmu 不提供
-公开的通用 Compose 注册 API，也不了解 EthExplorer。SeedEmu 中的旧 Explorer 实现仅在迁移
-验证期间暂时保留。
+公开的通用 Compose 注册 API。SeedEmu Docker 保留旧 Explorer 实现，
+ChainSEED 使用自己的组件。
 
 ## 软件包与导入规则
 

@@ -13,6 +13,8 @@ REPO_ROOT = SCRIPT_DIR.parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from examples.ethereum.D00_ethereum_poa import mini_internet
+
 from seedemu import *
 from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
@@ -80,7 +82,7 @@ def build_emulator(total_beacon_nodes: int = 3, vc_per_beacon: int = 3) -> Emula
     # hosts_per_stub_as=3 : create 3 hosts per one stub AS.
     # It will create hosts(physical node) named `host_{}`.format(counter), counter starts from 0. 
     hosts_per_stub_as = 3
-    emu = Makers.makeEmulatorBaseWith10StubASAndHosts(hosts_per_stub_as = hosts_per_stub_as)
+    emu = mini_internet.build_emulator(hosts_per_as=hosts_per_stub_as)
     
     # Create the Ethereum layer
     eth = EthereumService()

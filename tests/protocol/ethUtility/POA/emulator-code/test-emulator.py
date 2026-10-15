@@ -53,7 +53,7 @@ def run(dumpfile = None):
         else:
             current_platform = Platform.AMD64
 
-        docker = ChainSeedDocker(etherViewEnabled=True, platform=current_platform, internetMapEnabled=False)
+        docker = ChainSeedDocker(platform=current_platform, internetMapEnabled=False)
         emu.compile(docker, './output', override = True)
 
 if __name__ == "__main__":

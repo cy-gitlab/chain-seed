@@ -5,13 +5,15 @@ from __future__ import annotations
 import json
 import re
 import shlex
+import subprocess
 import time
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from seedemu.testing.base import TestRunner, TestRunnerError
 from seedemu.testing.runtime import ADDRESS_LABEL, ComposeRuntimeTest, ComposeService
+from seedemu.testing.compose import docker_compose_command
 
 
 META_PREFIX = "org.seedsecuritylabs.seedemu.meta."
@@ -102,6 +104,67 @@ class BlockchainTestRunner(TestRunner):
         "ethereum-exec": "probe_ethereum_exec",
         "ethereum-block-progress": "probe_ethereum_block_progress",
     }
+
+    def down(self) -> int:
+        """Save container diagnostics before lifecycle cleanup removes them."""
+        compose = self.compose_file()
+        if self.artifact_dir is not None and compose.is_file():
+            for name, args in (
+                ("runtime-ps", ["ps", "--all", "--format", "json"]),
+                ("runtime-logs", ["logs", "--no-color", "--timestamps", "--tail", "200"]),
+            ):
+                try:
+                    self.run_command(
+                        name, docker_compose_command() + ["-f", str(compose)] + args,
+                        cwd=compose.parent, env=self.docker_env(), timeout=60,
+                    )
+                except Exception as exc:
+                    # Diagnostic failures must never prevent resource cleanup.
+                    self.log("could not collect {}: {}".format(name, exc))
+        return super().down()
+
+    def run_command(
+        self, name: str, cmd: Sequence[str], *, cwd: Path,
+        env: Optional[Dict[str, str]] = None, timeout: Optional[int] = None,
+    ) -> subprocess.CompletedProcess[str]:
+        """Keep build output on disk while running and report timeout as failure."""
+        if name == "build" and self.artifact_dir is not None:
+            log_path = self.artifact_dir / "logs" / "build.log"
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            self.log("build output: {}".format(log_path))
+            build_env = dict(env) if env is not None else None
+            if build_env is not None:
+                build_env.setdefault("BUILDKIT_PROGRESS", "plain")
+            with log_path.open("w", encoding="utf-8") as output:
+                output.write("COMMAND: {}\nCWD: {}\n\n".format(shlex.join(cmd), cwd))
+                output.flush()
+                try:
+                    result = subprocess.run(
+                        list(cmd), cwd=str(cwd), env=build_env, text=True,
+                        stdout=output, stderr=subprocess.STDOUT,
+                        timeout=timeout, check=False,
+                    )
+                    status = result.returncode
+                except subprocess.TimeoutExpired:
+                    status = 124
+                    output.write("\nTIMEOUT: {} seconds\n".format(timeout))
+                    self.log("build timed out; see {}".format(log_path))
+                output.write("\nEXIT: {}\n".format(status))
+            return subprocess.CompletedProcess(list(cmd), status, "", "")
+
+        try:
+            return super().run_command(name, cmd, cwd=cwd, env=env, timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            def decode(value):
+                return value.decode("utf-8", errors="replace") if isinstance(value, bytes) else value or ""
+
+            result = subprocess.CompletedProcess(
+                list(cmd), 124, decode(exc.stdout),
+                decode(exc.stderr) + "\nTIMEOUT: {} seconds\n".format(timeout),
+            )
+            self.write_command_log(name, cmd, cwd, result)
+            self.log("{} timed out after {} seconds".format(name, timeout))
+            return result
 
     def probe_json_rpc(self, probe: Dict[str, Any]) -> tuple[bool, str]:
         payload = {

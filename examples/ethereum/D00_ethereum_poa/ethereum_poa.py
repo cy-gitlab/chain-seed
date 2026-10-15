@@ -14,16 +14,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from chainseed.compiler import ChainSeedDocker
-from chainseed.common.seedemu_examples import enable_seedemu_examples
-
-enable_seedemu_examples()
-
 from seedemu import *
+from examples.ethereum.D00_ethereum_poa import mini_internet
 from chainseed.ethereum import *
-from examples.internet.B03_hybrid_internet import hybrid_internet
 from examples.ethereum.D00_ethereum_poa import component_poa
 
-def run(dumpfile = None, hosts_per_as=3, total_eth_nodes=20, total_accounts_per_node=2):
+def run(dumpfile=None, hosts_per_as=3, total_eth_nodes=20, total_accounts_per_node=2, network_dumpfile=None):
     ###############################################################################
     # Set the platform information
     if dumpfile is None:
@@ -44,9 +40,11 @@ def run(dumpfile = None, hosts_per_as=3, total_eth_nodes=20, total_accounts_per_
             sys.exit(1)
             
     # Run and load the pre-built Internet component
-    emuA = Emulator()
-    hybrid_internet.run(dumpfile='./component_base.bin', hosts_per_as=hosts_per_as)
-    emuA.load('./component_base.bin')
+    if network_dumpfile is None:
+        emuA = mini_internet.build_emulator(hosts_per_as=hosts_per_as, topology="hybrid")
+    else:
+        emuA = Emulator()
+        emuA.load(str(Path(network_dumpfile).resolve()))
 
     # Run and load the pre-built Ethereum component
     emuB = Emulator()

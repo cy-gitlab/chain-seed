@@ -4,6 +4,12 @@
 
 ## Implementation status
 
+ChainSEED currently targets the SeedEmu `Docker` branch, packaged
+as `0.0.7`. It checks `SystemProfile` and Docker extension hooks directly;
+SeedEmu does not expose `EXTENSION_API_VERSION`. The upstream legacy blockchain
+implementations remain in place. Network definitions are shared from D00
+`mini_internet.py`, including unrendered network dumps.
+
 Currently implemented in the coordinated working trees:
 
 - explicit ChainSeed imports and ordinary `Emulator.addLayer()` integration;
@@ -217,8 +223,8 @@ assembling Compose output. `ChainSeedDocker` overrides it, asks enabled ChainSee
 components for service definitions, and resolves emulated network names through
 the inherited protected helper. The protected subclass seam consists of `_getSystemImageCatalog()`,
 `_getAdditionalComposeServices()`, and `_getRealNetName()`. There is no public
-generic Compose registration API and SeedEmu contains no EthExplorer knowledge. The legacy SeedEmu Explorer
-implementation remains temporarily available only during migration validation.
+generic Compose registration API. SeedEmu Docker retains its legacy Explorer
+implementation; ChainSEED uses its own component.
 
 ## Package and Import Rules
 

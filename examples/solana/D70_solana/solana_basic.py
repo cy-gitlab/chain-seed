@@ -27,8 +27,10 @@ from pathlib import Path
 SCRIPT_PATH = Path(__file__).resolve()
 EXAMPLE_DIR = SCRIPT_PATH.parent
 REPO_ROOT = SCRIPT_PATH.parents[3]
-if (REPO_ROOT / "seedemu").is_dir():
+if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+from examples.ethereum.D00_ethereum_poa import mini_internet
 
 from seedemu import Binding, Filter, Makers
 from seedemu.compiler import Platform
@@ -74,7 +76,7 @@ else:
 ###############################################################################
 # Build the base topology: 10 stub ASes, each with 2 hosts.
 hosts_per_stub_as = 2
-emu = Makers.makeEmulatorBaseWith10StubASAndHosts(hosts_per_stub_as=hosts_per_stub_as)
+emu = mini_internet.build_emulator(hosts_per_as=hosts_per_stub_as)
 
 ###############################################################################
 # Create a private Solana cluster.

@@ -9,27 +9,36 @@ protocol:
 - `solana/`: Solana network example
 - `chainlink/`: Chainlink on an Ethereum PoA network
 
-The D00 PoA and D31 Chainlink examples reuse
-`examples/internet/B03_hybrid_internet` from the editable SeedEmu checkout.
-ChainSeed locates that checkout through the installed `seedemu` package and
-does not duplicate SeedEmu's network-topology examples. No manual
-`PYTHONPATH` is required.
+Shared network definitions live in `ethereum/D00_ethereum_poa/mini_internet.py`.
+Ethereum, Monero, and Solana examples reuse them through public SeedEmu APIs.
+No SeedEmu source checkout or manual `PYTHONPATH` is required.
 
 Run examples from the ChainSeed repository root with both repositories
 installed in the same Python environment:
 
 ```bash
-python -m pip install -e /path/to/seed-emulator
-python -m pip install -e .
+python -m pip install /path/to/seed-emulator
+python -m pip install .
 python examples/ethereum/D01_ethereum_pos/ethereum_pos.py
 ```
 
 Generated `output/` directories are intentionally not versioned.
 
-Each migrated example has an `example.yaml` manifest. Run the same lifecycle
-used by GitHub Actions with:
+Canonical Ethereum examples have `example.yaml` manifests. Run compilation
+without starting containers, or opt into the Docker lifecycle once configured:
 
 ```bash
 chainseed-test compile examples/ethereum/D01_ethereum_pos/example.yaml
 chainseed-test all examples/ethereum/D01_ethereum_pos/example.yaml
 ```
+
+Export a reusable, unrendered network:
+
+```bash
+python examples/ethereum/D00_ethereum_poa/mini_internet.py \
+  --topology hybrid --hosts-per-as 3 --dumpfile /tmp/network.bin
+```
+
+Other Python examples can call `mini_internet.build_emulator()` directly, or
+load the exported network with `Emulator.load()`. D00's `run()` accepts
+`network_dumpfile` to bind its blockchain onto an existing network dump.

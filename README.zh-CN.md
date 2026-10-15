@@ -31,16 +31,41 @@ ChainSeed 可以导入 `seedemu` 已公开且有文档约束的 API。反方向�
 ChainSeed 服务通过 SeedEmu 现有的 `Node.setBaseSystem` API 声明与编译器无关的
 `SystemProfile`；`ChainSeedDocker` 再把 ChainSeed 自有 profile 映射为对应平台的
 镜像和部署组件。ChainSeed 不再依赖 SeedEmu 的区块链镜像表；区块链实现、
-镜像、示例和协议测试由本仓库负责。SeedEmu 中的旧条目仅为迁移验证暂时保留。
+镜像、示例和协议测试由本仓库负责。SeedEmu Docker 仍保留旧实现；ChainSEED 独立使用本仓库的区块链实现。
 EthExplorer 部署也由 ChainSeed 负责：Python 集成位于
 `chainseed.ethereum.EthExplorer`，镜像配方保留在 `images/ethexplorer`。
 SeedEmu 只为编译器子类提供受保护的 Compose 附加服务钩子；`ChainSeedDocker`
-覆写该钩子，并完整拥有 EthExplorer 服务定义与网络接入。在迁移验证完成前，
-SeedEmu 中的旧 Explorer 路径暂时保留用于对照。
+覆写该钩子，并完整拥有 EthExplorer 服务定义与网络接入。上游旧 Explorer 路径仍保留，ChainSEED 使用自己的组件。
 
 仓库不复制生成的 Compose 输出、客户端数据库、大规模原始采样、Xatu 输入
 数据、Python 缓存和 Node 依赖缓存。来源与排除项记录在
 [MIGRATION_SOURCE.md](MIGRATION_SOURCE.md)。
+
+## 普通安装
+
+Python 发行名是 `chainseed`，导入名同样是 `chainseed`；仓库名仍为 `chain-seed`。
+当前支持 Python 3.10，旧版 Web3 5 依赖升级前不支持 Python 3.11 及以上。
+使用 SeedEmu `Docker` 分支（当前发行版本为 `0.0.7`）。ChainSEED 在导入时
+检查 `SystemProfile` 和 Docker 扩展钩子，版本号本身不足以证明兼容性。
+ChainSEED 尚未发布到 PyPI。
+
+SeedEmu Docker 使用 editable 安装，ChainSEED 使用普通安装：
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ../seed-emulator
+python -m pip install .
+```
+
+先从 SeedEmu `Docker` 源码安装，再安装 ChainSEED。虽然 ChainSEED 声明
+了 SeedEmu 依赖，但 PyPI 上同版本的旧构建可能没有所需钩子。
+SeedEmu 独立维护，目前仍保留其旧区块链实现。
+SeedEmu Docker 的普通 wheel 缺少旧区块链模板资源，导入时会失败，
+因此当前使用上述 editable 安装，保留源码目录。此问题需要由上游另行修复。
+Docker、客户端镜像和 Node 工具链不由 Python 包安装提供。
+通用 Docker 网络适配已移至 SeedEmu 的 Docker 分支，ChainSEED 不再覆写网络编译。D01 的 PoS 出块和签名 ETH 转账
+已在 Docker 29.9.0 上验证通过；其他示例仍需动态验证。
 
 ## 联合开发安装
 
@@ -59,10 +84,10 @@ seed-workspace/
 mkdir seed-workspace
 cd seed-workspace
 
-git clone https://github.com/BruceJqs/seed-emulator.git
+git clone --branch Docker https://github.com/seed-labs/seed-emulator.git
 git clone https://github.com/seed-labs/chain-seed.git
 
-git -C seed-emulator switch development
+git -C seed-emulator switch chainseed
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -84,10 +109,9 @@ chainseed-test all chain-seed/examples/ethereum/D01_ethereum_pos/example.yaml
 python -m pip install -e "./chain-seed[dev,fidelity]"
 ```
 
-部分 ChainSeed 示例会复用 SeedEmu 顶层 `examples` 目录中的拓扑模块。
-ChainSeed 会通过已安装的 `seedemu` 包定位这些模块，因此 SeedEmu 必须从
-包含 `examples` 目录的源码 checkout 进行 editable 安装，无需手动设置
-`PYTHONPATH`。
+共享网络定义位于 `examples/ethereum/D00_ethereum_poa/mini_internet.py`，调用 SeedEmu 公开网络 API，支持 mini/full/hybrid 拓扑和网络 `.bin` 导出。
+ChainSeed 示例不再依赖 SeedEmu 源码中的顶层 `examples` 目录。
+示例脚本仍位于本仓库 `examples/`，使用时保留整个目录。
 
 迁移后使用显式导入：
 
@@ -105,7 +129,7 @@ ChainSeed 与 SeedEmu 独立发布。ChainSeed 可以发布新版本以适配新
 SeedEmu，而不要求 SeedEmu 同步发版；每个 ChainSeed 版本都必须明确声明
 其支持的 SeedEmu 版本范围。
 
-联合开发期间，两个仓库都通过 editable checkout 安装并一起测试。当前仍
+联合开发期间，两个仓库通过普通安装或 editable checkout 安装并一起测试。当前仍
 保留 alpha 版本元数据，不提前声称兼容尚未发布的 SeedEmu API。
 
 首次 `1.0.0` 的发布门禁是：
@@ -138,3 +162,8 @@ docs/            架构与直接切换迁移设计
 
 目标架构和仍需补充的 SeedEmu 公共 API 见
 [docs/design](docs/design/README.zh-CN.md)。
+
+网络模式由 SeedEmu 的 Docker 分支配置，ChainSeedDocker 直接继承，
+需要 Docker Engine 28 或更新版本。仿真的 Local/InternetExchange 网络使用 `gateway_mode_ipv4=nat-unprotected`，允许仿真路由器转发流量。
+该模式允许直接路由访问网络中未发布的端口，适用于独立实验环境；外部 Bridge
+网络保持上游默认配置。不修改 Docker daemon 的全局防火墙设置。

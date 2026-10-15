@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
+from chainseed.compiler import ChainSeedDocker
+from chainseed.ethereum import *
 from seedemu import *
 import sys, os
 
@@ -111,7 +113,7 @@ emu.render()
 
 # Enable internetMap
 # Enable etherView
-docker = Docker(internetMapEnabled=True, etherViewEnabled=False, platform=platform)
+docker = ChainSeedDocker(internetMapEnabled=True, platform=platform)
 docker.attachCustomContainer(
     compose_entry=DOCKER_COMPOSE_ETHER_VIEW,
     asn=152, net='net0', ip_address='10.152.0.80',

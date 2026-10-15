@@ -43,6 +43,6 @@ platform_mapping = {
     "amd": Platform.AMD64,
     "arm": Platform.ARM64
 }
-docker = ChainSeedDocker(internetMapEnabled=True, internetMapPort=8081, etherViewEnabled=True, platform=platform_mapping[platform])
+docker = ChainSeedDocker(internetMapEnabled=True, internetMapPort=8081, platform=platform_mapping[platform])
 
 emu.compile(docker, OUTPUTDIR, override = True)

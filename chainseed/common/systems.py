@@ -12,6 +12,8 @@ ETHEREUM_POS = SystemProfile(
 MONERO = SystemProfile("chainseed.monero", subset=BaseSystem.SEEDEMU_BASE)
 SOLANA = SystemProfile("chainseed.solana", subset=BaseSystem.SEEDEMU_BASE)
 CHAINLINK = SystemProfile("chainseed.chainlink")
+OP_STACK = SystemProfile("chainseed.ethereum.op-stack", subset=BaseSystem.SEEDEMU_BASE)
+SC_DEPLOYER = SystemProfile("chainseed.ethereum.sc-deployer", subset=BaseSystem.SEEDEMU_BASE)
 
 CHAINSEED_SYSTEMS = (
     ETHEREUM_LEGACY,
@@ -19,6 +21,8 @@ CHAINSEED_SYSTEMS = (
     MONERO,
     SOLANA,
     CHAINLINK,
+    OP_STACK,
+    SC_DEPLOYER,
 )
 
 
@@ -30,6 +34,8 @@ class ChainSeedSystem:
     MONERO = MONERO
     SOLANA = SOLANA
     CHAINLINK = CHAINLINK
+    OP_STACK = OP_STACK
+    SC_DEPLOYER = SC_DEPLOYER
 
 
 __all__ = [
@@ -39,5 +45,7 @@ __all__ = [
     "ETHEREUM_LEGACY",
     "ETHEREUM_POS",
     "MONERO",
+    "OP_STACK",
+    "SC_DEPLOYER",
     "SOLANA",
 ]

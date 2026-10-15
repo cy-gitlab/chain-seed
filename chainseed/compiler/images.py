@@ -2,7 +2,9 @@
 
 from seedemu.compiler import BASE_IMAGE, BASE_IMAGE_ARM64, DockerImage, Platform
 
-from ..common.systems import CHAINLINK, ETHEREUM_LEGACY, ETHEREUM_POS, MONERO, SOLANA
+from ..common.systems import (
+    CHAINLINK, ETHEREUM_LEGACY, ETHEREUM_POS, MONERO, SOLANA, OP_STACK, SC_DEPLOYER,
+)
 
 
 def _image(name: str, software=(), subset=None) -> DockerImage:
@@ -41,6 +43,8 @@ IMAGE_CATALOG = {
             subset=BASE_IMAGE,
         ),
         CHAINLINK: _image("amanvelani/chainlink-develop:amd64"),
+        OP_STACK: _image("huagluck/seedemu-op-stack", subset=BASE_IMAGE),
+        SC_DEPLOYER: _image("huagluck/seedemu-sc-deployer", subset=BASE_IMAGE),
     },
     Platform.ARM64: {
         ETHEREUM_LEGACY: _image(
@@ -62,6 +66,8 @@ IMAGE_CATALOG = {
             subset=BASE_IMAGE_ARM64,
         ),
         CHAINLINK: _image("amanvelani/chainlink-develop:arm64"),
+        OP_STACK: _image("huagluck/seedemu-op-stack", subset=BASE_IMAGE_ARM64),
+        SC_DEPLOYER: _image("huagluck/seedemu-sc-deployer", subset=BASE_IMAGE_ARM64),
     },
 }
 

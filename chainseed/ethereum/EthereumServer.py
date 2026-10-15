@@ -167,7 +167,7 @@ class EthereumServer(Server):
 
         # install geth and bootnode
         if self._custom_geth_binary_path : 
-            node.importFile("../../"+self._custom_geth_binary_path, '/usr/bin/geth')
+            node.importFile(self._custom_geth_binary_path, '/usr/bin/geth')
             node.appendStartCommand("chmod +x /usr/bin/geth")
 
         # genesis
@@ -237,7 +237,7 @@ class EthereumServer(Server):
         """
         assert path.exists(customGethBinaryPath), "EthereumServer::setCustomGeth: custom geth binary file does not exist. path : {}".format(customGethBinaryPath)
 
-        self._custom_geth_binary_path = customGethBinaryPath
+        self._custom_geth_binary_path = path.abspath(customGethBinaryPath)
 
         return self
 

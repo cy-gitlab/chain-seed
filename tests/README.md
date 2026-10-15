@@ -16,5 +16,26 @@ chainseed-test all examples/ethereum/D01_ethereum_pos/example.yaml
 `protocol/` are legacy protocol tests retained as migration references; new
 coverage belongs in example manifests and runtime programs.
 
-ChainSeed CI checks out a selected SeedEmu revision and installs both projects
-as editable packages. SeedEmu CI does not install or import ChainSeed.
+ChainSeed CI checks out SeedEmu `Docker`, installs it in editable mode,
+and verifies the installed ChainSEED wheel and copied examples. Upstream SeedEmu
+currently omits legacy blockchain template assets from its wheel; using its
+source assets avoids the missing upstream wheel resources.
+`test_package_integration.py` compiles Ethereum PoA/PoW/PoS, Explorer, Monero,
+Solana and Chainlink configurations, including a custom Geth binary.
+SeedEmu CI does not install or import ChainSeed.
+
+`test_example_network.py` checks mini/hybrid networks and `.bin` reuse.
+`check_repository_boundaries.py --seedemu ../seed-emulator` checks source
+ownership, removed API references, and Python syntax across both repositories.
+SeedEmu retains its legacy blockchain sources; boundary checks enforce ChainSEED
+imports independently of those implementations. CI defaults to compilation; the Docker lifecycle requires explicit opt-in.
+
+Build output is streamed to `logs/build.log` when `--artifact-dir` is provided.
+Use `tail -f` to inspect progress from another terminal. Command timeouts return
+exit code 124 and retain partial output; `all` still attempts cleanup.
+`test_runner_commands.py` covers timeout diagnostics and lifecycle cleanup.
+
+Before Compose cleanup, the ChainSEED runner saves `logs/runtime-ps.log` and
+`logs/runtime-logs.log` (the last 200 lines per service). For interactive
+diagnosis, run `up` and `probe` separately; a probe failure then leaves the
+containers running until an explicit `down`.

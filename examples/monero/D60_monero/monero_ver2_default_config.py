@@ -5,6 +5,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+import sys
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from examples.ethereum.D00_ethereum_poa import mini_internet
+
 import os
 import sys
 
@@ -40,7 +49,7 @@ else:
 
 hosts_per_stub_as = 3
 # Build the base topology of 10 Stub-AS, each with 3 hosts
-emu = Makers.makeEmulatorBaseWith10StubASAndHosts(hosts_per_stub_as=hosts_per_stub_as)
+emu = mini_internet.build_emulator(hosts_per_as=hosts_per_stub_as)
 
 monero = MoneroService()
 # Create a blockchain named base-monero; set a small difficulty for quick blocks in demos

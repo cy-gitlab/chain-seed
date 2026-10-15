@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       seedemu-ref:
-        description: "SeedEmu revision from BruceJqs/seed-emulator"
+        description: "SeedEmu revision from seed-labs/seed-emulator"
         type: string
         required: true
-        default: development
+        default: Docker
       selected-example:
         description: "Run one selected example, or all"
         type: choice
@@ -28,16 +28,16 @@ on:
         description: "Run Docker build/up/probe/test/down lifecycle"
         type: boolean
         required: false
-        default: true
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
-  SEEDEMU_REF: ${{ github.event.inputs['seedemu-ref'] || 'development' }}
+  SEEDEMU_REF: ${{ github.event.inputs['seedemu-ref'] || 'Docker' }}
   SELECTED_EXAMPLE: ${{ github.event.inputs['selected-example'] || 'all' }}
-  RUN_FULL_LIFECYCLE: ${{ github.event.inputs['run-full-lifecycle'] || 'true' }}
+  RUN_FULL_LIFECYCLE: ${{ github.event.inputs['run-full-lifecycle'] || 'false' }}
 
 jobs:
   static-checks:
@@ -57,7 +57,7 @@ jobs:
       - name: Check out SeedEmu
         uses: actions/checkout@v5
         with:
-          repository: BruceJqs/seed-emulator
+          repository: seed-labs/seed-emulator
           ref: ${{ env.SEEDEMU_REF }}
           path: seed-emulator
 
@@ -70,17 +70,31 @@ jobs:
             seed-emulator/**/*requirements.txt
             chain-seed/pyproject.toml
 
+      - name: Build ChainSEED wheel
+        run: |
+          pip install build
+          python -m build --wheel . --outdir ../wheels
+
+      - name: Check installed ChainSEED wheel and copied examples
+        run: |
+          pip install -e ../seed-emulator
+          pip install ../wheels/chainseed-*.whl
+          pip check
+          python -I tests/installed_package_smoke.py --examples examples
+
       - name: Install coordinated workspaces
         run: |
-          pip install -r ../seed-emulator/requirements.txt -r ../seed-emulator/dev-requirements.txt -r ../seed-emulator/tests/requirements.txt
           pip install -e ../seed-emulator
-          pip install -e ".[dev]"
+          pip install ".[dev]"
+
+      - name: Check repository ownership
+        run: python tests/check_repository_boundaries.py --seedemu ../seed-emulator
 
       - name: Compile ChainSeed packages and example tests
         run: python -m compileall -q chainseed examples/ethereum
 
       - name: Check public imports
-        run: python -m pytest -q tests/test_public_imports.py
+        run: python -m pytest -q tests/test_public_imports.py tests/test_package_integration.py tests/test_example_network.py tests/test_runner_commands.py
 
       - name: Validate example manifests
         run: |
@@ -125,7 +139,7 @@ jobs:
       - name: Check out SeedEmu
         uses: actions/checkout@v5
         with:
-          repository: BruceJqs/seed-emulator
+          repository: seed-labs/seed-emulator
           ref: ${{ env.SEEDEMU_REF }}
           path: seed-emulator
 
@@ -140,9 +154,8 @@ jobs:
 
       - name: Install coordinated workspaces
         run: |
-          pip install -r ../seed-emulator/requirements.txt -r ../seed-emulator/dev-requirements.txt -r ../seed-emulator/tests/requirements.txt
           pip install -e ../seed-emulator
-          pip install -e ".[dev]"
+          pip install ".[dev]"
 
       - name: Compile selected example
         if: ${{ env.SELECTED_EXAMPLE == 'all' || env.SELECTED_EXAMPLE == matrix.example.code }}
@@ -193,7 +206,7 @@ jobs:
       - name: Check out SeedEmu
         uses: actions/checkout@v5
         with:
-          repository: BruceJqs/seed-emulator
+          repository: seed-labs/seed-emulator
           ref: ${{ env.SEEDEMU_REF }}
           path: seed-emulator
 
@@ -208,9 +221,8 @@ jobs:
 
       - name: Install coordinated workspaces
         run: |
-          pip install -r ../seed-emulator/requirements.txt -r ../seed-emulator/dev-requirements.txt -r ../seed-emulator/tests/requirements.txt
           pip install -e ../seed-emulator
-          pip install -e ".[dev]"
+          pip install ".[dev]"
 
       - name: Run selected example lifecycle
         if: ${{ env.RUN_FULL_LIFECYCLE == 'true' && (env.SELECTED_EXAMPLE == 'all' || env.SELECTED_EXAMPLE == matrix.example.code) }}

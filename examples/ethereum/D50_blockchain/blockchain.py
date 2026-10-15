@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
+from pathlib import Path
+import sys
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from examples.ethereum.D00_ethereum_poa import mini_internet
+
 from seedemu import *
 from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
@@ -56,7 +65,7 @@ else:
     print(f"Usage:  {script_name} amd|arm")
     sys.exit(1)
 
-emu = Makers.makeEmulatorBaseWith10StubASAndHosts(1)
+emu = mini_internet.build_emulator(1)
 
 # Create the Ethereum layer
 # saveState=True: will set the blockchain folder using `volumes`, 

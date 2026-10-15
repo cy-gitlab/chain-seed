@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
+from pathlib import Path
+import sys
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from examples.ethereum.D00_ethereum_poa import mini_internet
+
 from seedemu import *
 from chainseed.compiler import ChainSeedDocker
 from chainseed.ethereum import *
@@ -55,7 +64,7 @@ total_stub_as = 10  # We have 10 ASNs available
 hosts_per_stub_as = math.ceil(total_number_of_nodes / total_stub_as)
 
 # Create Emulator Base with the calculated number of hosts per stub AS
-emu = Makers.makeEmulatorBaseWith10StubASAndHosts(hosts_per_stub_as=hosts_per_stub_as)
+emu = mini_internet.build_emulator(hosts_per_as=hosts_per_stub_as)
 
 print(f"Number of eth nodes per stub AS: {hosts_per_stub_as}")
 

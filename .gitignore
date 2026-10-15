@@ -16,4 +16,6 @@ node_modules/
 **/client-data/
 **/*.pcap
 **/*.pcapng
+mini-internet.bin
+component_*.bin
 

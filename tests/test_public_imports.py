@@ -5,7 +5,7 @@ class PublicImportTests(unittest.TestCase):
     def test_extension_descriptor(self):
         from chainseed import ChainSeedDocker, descriptor
 
-        self.assertEqual(descriptor.distribution, "chain-seed")
+        self.assertEqual(descriptor.distribution, "chainseed")
         self.assertEqual(descriptor.extension_api_version, 1)
         self.assertEqual(ChainSeedDocker().getName(), "ChainSeedDocker")
 
