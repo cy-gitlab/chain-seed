@@ -1,5 +1,15 @@
 # Blockchain Emulator Tools
 
+- [Ethereum Lookingglass](../ethereum/lookingglass/README.md): deployment, resources,
+  head observations and optional peer/queue/txpool viewing.
+
+- `lib/runtime_mounts.py`: shared compiler-output helper used by large-scale
+  Ethereum and Monero examples to mount node configuration into base images.
+- `lib/collect_node_memory.py`: shared container resource collector.
+- `lib/collect_project_resources.py`: project-scoped resource collection and container identity snapshot.
+- `lib/project_resources.py`: join retained resources to project identities and roles.
+- `lib/processes.py`: child-process logging and shutdown for observation tools.
+
 - `Wallet`: a wallet implemented in Python. It is used for interacting
    with the blockchain using Python programs. 
 

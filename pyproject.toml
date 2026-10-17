@@ -13,6 +13,7 @@ authors = [
   {name = "SEED Labs"}
 ]
 dependencies = [
+  "PyYAML>=6.0,<7",
   "seedemu>=0.0.7,<0.1",
   "eth-account==0.5.9",
   "requests>=2.22",
@@ -24,12 +25,6 @@ dependencies = [
 dev = [
   "build>=1.2",
   "pytest>=8",
-]
-fidelity = [
-  "duckdb>=1.0",
-  "numpy>=1.24",
-  "pandas>=2.0",
-  "pyarrow>=14",
 ]
 
 [project.entry-points."seedemu.extensions"]
@@ -46,6 +41,7 @@ where = ["."]
 include = ["chainseed*"]
 
 [tool.setuptools.package-data]
+"chainseed.ethereum.lookingglass" = ["static/*"]
 "chainseed.ethereum.EthTemplates" = [
   "files_ethereum/*",
   "files_faucet/*",

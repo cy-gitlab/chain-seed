@@ -76,37 +76,13 @@ chain-seed/
 ├── chainseed/
 │   ├── extension.py
 │   ├── common/
-│   │   ├── artifacts.py
-│   │   ├── images.py
-│   │   ├── labels.py
-│   │   └── runtime.py
+│   ├── compiler/
 │   ├── ethereum/
-│   │   ├── service.py
-│   │   ├── servers/
-│   │   ├── genesis/
-│   │   ├── accounts/
-│   │   ├── faucet/
-│   │   └── utility/
+│   │   └── lookingglass/
 │   ├── monero/
-│   │   ├── service.py
-│   │   ├── servers/
-│   │   ├── network.py
-│   │   └── wallet.py
 │   ├── solana/
-│   │   ├── service.py
-│   │   ├── servers/
-│   │   └── cluster.py
 │   ├── chainlink/
-│   │   ├── service.py
-│   │   ├── servers/
-│   │   └── templates/
-│   ├── observability/
-│   │   ├── schema.py
-│   │   ├── collectors/
-│   │   └── visualization/
 │   └── testing/
-│       ├── probes/
-│       └── runtime/
 ├── images/
 │   ├── ethereum/
 │   ├── ethexplorer/
@@ -114,24 +90,26 @@ chain-seed/
 │   ├── solana/
 │   └── chainlink/
 ├── tools/
-│   ├── etherview/
-│   ├── wallet/
-│   └── lookingglass/
-├── examples/
+│   ├── blockchain/
 │   ├── ethereum/
-│   ├── monero/
-│   ├── solana/
-│   ├── chainlink/
-│   └── large_scale/
-├── experiments/
-│   ├── configs/
-│   ├── manifests/
-│   └── scripts/
+│   │   ├── large_scale/
+│   │   ├── lookingglass/
+│   │   └── transaction_generator/
+│   ├── monero/large_scale/
+│   └── solana/large_scale/
+├── examples/
+│   ├── D00_ethereum_poa/
+│   ├── D01_ethereum_pos/
+│   ├── ...
+│   ├── D60_monero/
+│   ├── D61_large_scale/
+│   │   ├── ethereum/
+│   │   ├── monero/
+│   │   └── solana/
+│   ├── D70_solana/
+│   └── ...
+├── experiments/legacy/
 ├── tests/
-│   ├── unit/
-│   ├── render/
-│   ├── runtime/
-│   └── integration/
 └── docs/
 ```
 
@@ -386,16 +364,16 @@ Git 只存储可重现输入和体量较小的派生结果：
 - 外部数据清单及校验和；
 - 绘图代码。
 
-原始抓包、Xatu 提取结果、生成部署、客户端数据库、容器日志和长时间
-采样流存储在外部数据系统中。数据集清单记录：
+原始抓包、生成部署、客户端数据库、容器日志和长时间采样流存储在
+外部数据系统中。数据集清单记录：
 
 ```text
 dataset_id, schema_version, source_uri, sha256, bytes,
 created_at, generator_commit, seedemu_version, chainseed_version
 ```
 
-迁移当前 D61 大规模目录时，应按内容类型拆分，而不是整体复制。可重现
-源码进入 Git，大型生成数据上传到外部存储并由清单替代。
+大规模部署示例位于 `examples/D61_large_scale/<protocol>/`，观测与负载工具
+位于 `tools/<protocol>/`。生成的部署和采样数据不提交到 Git。
 
 ## 版本策略
 

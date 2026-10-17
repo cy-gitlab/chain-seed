@@ -126,6 +126,57 @@ class PackageIntegrationTests(unittest.TestCase):
         compose = self.compile(emulator)
         self.assertIn("FROM chainseed-monero-fixture:static", self.compiled_dockerfiles)
 
+    def test_monero_seed_connection_policies_reach_start_scripts(self):
+        from chainseed.monero import MoneroSeedConnectionMode, MoneroService
+
+        flags = {
+            MoneroSeedConnectionMode.EXCLUSIVE: "--add-exclusive-node",
+            MoneroSeedConnectionMode.PRIORITY: "--add-priority-node",
+            MoneroSeedConnectionMode.SEED: "--seed-node",
+        }
+        names = ["seed1", "seed2", "client", "override", "pruned"]
+        for mode, flag in flags.items():
+            for builtin in (False, True):
+                with self.subTest(mode=mode, builtin=builtin):
+                    emulator = self.make_emulator(names)
+                    service = MoneroService()
+                    chain = service.createBlockchain("seed-policies")
+                    chain.setSeedConnectionMode(mode).setUseDefaultSeedNodes(builtin)
+                    servers = {
+                        "seed1": chain.createSeedNode("seed1"),
+                        "seed2": chain.createSeedNode("seed2"),
+                        "client": chain.createClientNode("client"),
+                        "override": chain.createClientNode(
+                            "override", connect_mode=MoneroSeedConnectionMode.PRIORITY
+                        ),
+                        "pruned": chain.createPrunedNode("pruned"),
+                    }
+                    emulator.addLayer(service)
+                    emulator.render()
+                    system = emulator.getLayer("Base").getAutonomousSystem(150)
+                    endpoints = {
+                        name: "{}:{}".format(
+                            system.getHost(name).getInterfaces()[0].getAddress(),
+                            servers[name].get_p2p_port(),
+                        )
+                        for name in ("seed1", "seed2")
+                    }
+                    for name in names:
+                        text = system.getHost(name).getFile(
+                            "/usr/local/bin/seedemu-monero-node.sh"
+                        ).get()[1]
+                        actual = [
+                            line.strip() for line in text.splitlines()
+                            if any(line.strip().startswith('DAEMON_ARGS+=("' + f + '=')
+                                   for f in flags.values())
+                        ]
+                        selected = flags[MoneroSeedConnectionMode.PRIORITY] if name == "override" else flag
+                        expected = [] if builtin else [
+                            'DAEMON_ARGS+=("{}={}")'.format(selected, endpoint)
+                            for seed, endpoint in endpoints.items() if seed != name
+                        ]
+                        self.assertCountEqual(actual, expected)
+
     def test_solana(self):
         from chainseed.solana import SolanaService
 

@@ -1,4 +1,0 @@
-event_date_time,remote_peer_id_unique_key,direction,opened,transient,remote_agent_implementation,remote_geo_country_code,meta_client_name,meta_client_implementation,meta_client_geo_country_code,meta_network_name
-2026-07-16T12:10:00Z,104,Outbound,2026-07-16T12:05:00Z,false,Nimbus,FR,A,Lighthouse,US,mainnet
-2026-07-16T12:11:00Z,108,Inbound,2026-07-16T11:00:00Z,false,Prysm,AU,D,Teku,GB,mainnet
-

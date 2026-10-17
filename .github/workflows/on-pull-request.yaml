@@ -91,19 +91,19 @@ jobs:
         run: python tests/check_repository_boundaries.py --seedemu ../seed-emulator
 
       - name: Compile ChainSeed packages and example tests
-        run: python -m compileall -q chainseed examples/ethereum
+        run: python -m compileall -q chainseed examples
 
       - name: Check public imports
         run: python -m pytest -q tests/test_public_imports.py tests/test_package_integration.py tests/test_example_network.py tests/test_runner_commands.py
 
       - name: Validate example manifests
         run: |
-          chainseed-test clean examples/ethereum/D01_ethereum_pos/example.yaml
-          chainseed-test clean examples/ethereum/D10_eth_explorer/example.yaml
-          chainseed-test clean examples/ethereum/D20_faucet/example.yaml
-          chainseed-test clean examples/ethereum/D21_deploy_contract/example.yaml
-          chainseed-test clean examples/ethereum/D22_oracle/example.yaml
-          chainseed-test clean examples/ethereum/D23_validator/example.yaml
+          chainseed-test clean examples/D01_ethereum_pos/example.yaml
+          chainseed-test clean examples/D10_eth_explorer/example.yaml
+          chainseed-test clean examples/D20_faucet/example.yaml
+          chainseed-test clean examples/D21_deploy_contract/example.yaml
+          chainseed-test clean examples/D22_oracle/example.yaml
+          chainseed-test clean examples/D23_validator/example.yaml
 
   compile-selected-examples:
     name: Compile ${{ matrix.example.code }}
@@ -119,17 +119,17 @@ jobs:
       matrix:
         example:
           - code: D01
-            manifest: examples/ethereum/D01_ethereum_pos/example.yaml
+            manifest: examples/D01_ethereum_pos/example.yaml
           - code: D10
-            manifest: examples/ethereum/D10_eth_explorer/example.yaml
+            manifest: examples/D10_eth_explorer/example.yaml
           - code: D20
-            manifest: examples/ethereum/D20_faucet/example.yaml
+            manifest: examples/D20_faucet/example.yaml
           - code: D21
-            manifest: examples/ethereum/D21_deploy_contract/example.yaml
+            manifest: examples/D21_deploy_contract/example.yaml
           - code: D22
-            manifest: examples/ethereum/D22_oracle/example.yaml
+            manifest: examples/D22_oracle/example.yaml
           - code: D23
-            manifest: examples/ethereum/D23_validator/example.yaml
+            manifest: examples/D23_validator/example.yaml
     steps:
       - name: Check out ChainSeed
         uses: actions/checkout@v5
@@ -186,17 +186,17 @@ jobs:
       matrix:
         example:
           - code: D01
-            manifest: examples/ethereum/D01_ethereum_pos/example.yaml
+            manifest: examples/D01_ethereum_pos/example.yaml
           - code: D10
-            manifest: examples/ethereum/D10_eth_explorer/example.yaml
+            manifest: examples/D10_eth_explorer/example.yaml
           - code: D20
-            manifest: examples/ethereum/D20_faucet/example.yaml
+            manifest: examples/D20_faucet/example.yaml
           - code: D21
-            manifest: examples/ethereum/D21_deploy_contract/example.yaml
+            manifest: examples/D21_deploy_contract/example.yaml
           - code: D22
-            manifest: examples/ethereum/D22_oracle/example.yaml
+            manifest: examples/D22_oracle/example.yaml
           - code: D23
-            manifest: examples/ethereum/D23_validator/example.yaml
+            manifest: examples/D23_validator/example.yaml
     steps:
       - name: Check out ChainSeed
         uses: actions/checkout@v5

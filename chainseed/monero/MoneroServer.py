@@ -981,15 +981,15 @@ class MoneroFullNodeServer(MoneroBaseServer):
 
         # Connection strategy
         # Only add seed endpoint arguments if not using Monero's default seed nodes
-        # use_default_seeds = self._network._defaults.use_default_seed_nodes
-        # if self._seed_endpoints and not use_default_seeds:
-        #     for endpoint in self._seed_endpoints:
-        #         if opts.connect_mode == MoneroSeedConnectionMode.EXCLUSIVE:
-        #             daemon_args.append(f"--add-exclusive-node={endpoint}")
-        #         elif opts.connect_mode == MoneroSeedConnectionMode.PRIORITY:
-        #             daemon_args.append(f"--add-priority-node={endpoint}")
-        #         else:
-        #             daemon_args.append(f"--seed-node={endpoint}")
+        use_default_seeds = self._network._defaults.use_default_seed_nodes
+        if self._seed_endpoints and not use_default_seeds:
+            for endpoint in self._seed_endpoints:
+                if opts.connect_mode == MoneroSeedConnectionMode.EXCLUSIVE:
+                    daemon_args.append(f"--add-exclusive-node={endpoint}")
+                elif opts.connect_mode == MoneroSeedConnectionMode.PRIORITY:
+                    daemon_args.append(f"--add-priority-node={endpoint}")
+                else:
+                    daemon_args.append(f"--seed-node={endpoint}")
 
         for peer in opts.preferred_peers:
             daemon_args.append(f"--add-peer={peer}")

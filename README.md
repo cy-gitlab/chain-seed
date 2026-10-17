@@ -26,11 +26,9 @@ direction, SeedEmu must never import or package ChainSeed. ChainSeed service
 code should also avoid SeedEmu compiler internals so that normal SeedEmu
 compiler refactors do not unnecessarily break the extension.
 
-## Current extraction
+## Package integration
 
-This is the first functional extraction from SeedEmu. The copied service
-implementations retain their public behavior while using `chainseed.*` package
-ownership. The extraction does not require SeedEmu to import ChainSeed.
+Blockchain services are imported from `chainseed.*`.
 ChainSeed services assign compiler-neutral `SystemProfile` objects through
 SeedEmu's existing `Node.setBaseSystem` API. `ChainSeedDocker` maps those
 ChainSeed-owned profiles to platform-specific images and deployment components. ChainSeed no longer depends on SeedEmu's blockchain image table; blockchain
@@ -43,9 +41,13 @@ catalogs and contribute auxiliary Compose services. `ChainSeedDocker` overrides
 those hooks and owns all
 EthExplorer service definitions and network attachment. The legacy SeedEmu Explorer path remains upstream; ChainSEED uses its own component.
 
-Generated Compose output, client databases, raw benchmark samples, Xatu input
-datasets, Python caches, and Node package caches are excluded. The extraction
-source and exclusions are recorded in [MIGRATION_SOURCE.md](MIGRATION_SOURCE.md).
+The optional [Lookingglass viewer](tools/ethereum/lookingglass/README.md) can be
+included with `docker.enableLookingglass("pos", port=8765)` before compilation.
+Its runtime and web assets are packaged with ChainSeed; the generated Compose
+service starts and stops with the deployment.
+
+Generated Compose output, client databases, raw benchmark samples, datasets,
+Python caches, and Node package caches are excluded from Git.
 
 ## Ordinary installation
 
@@ -97,8 +99,6 @@ cd seed-workspace
 git clone --branch Docker https://github.com/seed-labs/seed-emulator.git
 git clone https://github.com/seed-labs/chain-seed.git
 
-git -C seed-emulator switch chainseed
-
 python3 -m venv .venv
 source .venv/bin/activate
 
@@ -110,17 +110,11 @@ Run a local compile-only check or the complete Docker lifecycle with the same
 entry point used by CI:
 
 ```bash
-chainseed-test compile chain-seed/examples/ethereum/D01_ethereum_pos/example.yaml
-chainseed-test all chain-seed/examples/ethereum/D01_ethereum_pos/example.yaml
+chainseed-test compile chain-seed/examples/D01_ethereum_pos/example.yaml
+chainseed-test all chain-seed/examples/D01_ethereum_pos/example.yaml
 ```
 
-Install the `fidelity` extra only when working on large-scale experiments:
-
-```bash
-python -m pip install -e "./chain-seed[dev,fidelity]"
-```
-
-Shared network definitions live in `examples/ethereum/D00_ethereum_poa/mini_internet.py`,
+Shared network definitions live in `examples/D00_ethereum_poa/mini_internet.py`,
 use public SeedEmu APIs, and support mini/full/hybrid layouts and network `.bin` export. ChainSeed examples no longer depend on the
 SeedEmu checkout's top-level `examples` directory. Example scripts remain in this
 repository; keep the complete `examples/` directory when copying them.
@@ -165,13 +159,13 @@ semantic-versioned. A tested compatibility matrix belongs in each release.
 ## Layout
 
 ```text
-chainseed/   Python service layers and protocol-aware testing
+chainseed/       Python service layers and protocol-aware testing
 images/          Blockchain client and explorer image recipes
 tools/           Explorer, wallet, and blockchain support tools
-examples/        Small canonical examples grouped by protocol
-experiments/     Reproducible large-scale definitions without raw output
-tests/           Lightweight API checks and legacy migration references
-docs/            Architecture and direct-cut migration design
+examples/        Examples ordered by D number; large-scale deployments under D61
+experiments/     Archived prototypes and examples
+tests/           Package, compiler and runner checks
+docs/            Architecture, integration and user manuals
 ```
 
 The target architecture and remaining SeedEmu API work are documented in

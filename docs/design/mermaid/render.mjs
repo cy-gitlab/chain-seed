@@ -13,8 +13,6 @@ const documents = [
   "architecture.zh-CN.md",
   "seedemu-integration.md",
   "seedemu-integration.zh-CN.md",
-  "migration.md",
-  "migration.zh-CN.md",
 ].map((name) => join(docsDir, name));
 
 rmSync(outputDir, { force: true, recursive: true });

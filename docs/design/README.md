@@ -1,12 +1,10 @@
-# ChainSeed Separation Design
+# ChainSeed Design
 
 [中文](README.zh-CN.md) | English
 
 ## Decision
 
-Blockchain support moves from `seed-emulator` to the independent
-`chain-seed` repository in one coordinated release. There is no compatibility
-period and no import shim for the old `seedemu.services.*` modules.
+ChainSeed provides blockchain services as an independent SeedEmu extension.
 
 The dependency direction is fixed:
 
@@ -25,8 +23,6 @@ extensions.
   contract, runtime, artifacts, and observability.
 - [SeedEmu integration](seedemu-integration.md): the exact public interfaces and
   core changes required by an external ChainSeed package.
-- [Direct-cut migration](migration.md): source mapping, implementation order,
-  release coordination, CI, and acceptance criteria.
 
 ## Design Rules
 

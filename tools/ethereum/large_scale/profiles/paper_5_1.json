@@ -1,0 +1,24 @@
+{
+  "beacons": [100, 200, 300, 400],
+  "stub_as_count": 64,
+  "keys_per_client": 100,
+  "worker_cap": 2,
+  "geth_gomemlimit_mib": 384,
+  "genesis_delay_seconds": 1800,
+  "beacon_peers": 32,
+  "duration_seconds": 18000,
+  "tx_rate": 20,
+  "accounts": 1000,
+  "ready_timeout_seconds": 7200,
+  "drain_timeout_seconds": 1800,
+  "minimum_available_memory_gib": 32,
+  "health": {
+    "minimum_coverage_pct": 90,
+    "minimum_healthy_round_pct": 99,
+    "minimum_send_achievement_pct": 99,
+    "minimum_included_tps_achievement_pct": 99,
+    "maximum_missed_slot_pct": 1,
+    "maximum_finality_lag_epochs": 3
+  },
+  "provenance_note": "Paper 5.1 target counts/load/duration. Per-scale storage, peer/thread settings and client image versions still need reconciliation with the original runs; this is not a verified reproduction profile."
+}

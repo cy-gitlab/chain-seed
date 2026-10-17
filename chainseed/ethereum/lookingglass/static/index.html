@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lookingglass / Ethereum Network Observatory</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header>
+ <div class="brand"><span class="brand-mark" aria-hidden="true">L</span><div><h1>Lookingglass<span> / Ethereum</span></h1><p>NODE &amp; NETWORK OBSERVATORY</p></div></div>
+ <div class="header-actions"><span id="mode" class="badge">CONNECTING</span><button id="freeze">Pause updates</button><button id="export">Export snapshot</button><button id="paper">Figure mode</button></div>
+</header>
+<div class="runline"><span id="run">Reading observation source...</span><span id="freshness">Waiting for first sample</span></div>
+<main>
+ <section id="network-summary" class="panel network-summary" aria-label="Network workload summary"></section>
+ <section class="workspace">
+  <div class="toolbar"><div class="tabs" role="tablist" aria-label="Network layer"><button class="active" data-layer="beacon" role="tab">Beacon peers</button><button data-layer="geth" role="tab">Geth peers</button><button data-layer="service" role="tab">Service map</button></div><div class="filters"><label>AS<select id="asn"><option value="all">All AS</option></select></label><label>Color<select id="color"><option value="role">Role</option><option value="memory">Memory</option><option value="queue">API P0</option><option value="head">Head slot</option></select></label></div></div>
+  <div class="searchline"><input id="search" type="search" placeholder="Find node, IP, AS, slot or full transaction / block hash" aria-label="Search"><button id="clear">Reset</button><button id="svg-export">Export map SVG</button></div>
+  <div class="map-heading"><div><span class="eyebrow" id="map-kicker">OBSERVED CONNECTIONS</span><h2 id="map-title">Beacon peer network</h2></div><span id="counts" class="muted"></span></div>
+  <div id="graph-wrap"><svg id="graph" viewBox="0 0 1050 570" role="img" aria-label="Network topology"></svg><div id="empty" hidden></div></div>
+  <div class="legend"><span><i class="bn"></i>Beacon</span><span><i class="el"></i>Geth</span><span><i class="vc"></i>Validator client</span><span id="edge-legend">Line = reported peer connection, not message path</span></div>
+  <div id="coverage" class="coverage"></div>
+ </section>
+ <aside id="detail" aria-live="polite"></aside>
+ <section id="comparison" class="panel comparison" hidden></section>
+ <section class="timeline panel">
+  <div class="section-title"><div><span class="eyebrow">OBJECT LENS</span><h2>Observation replay</h2></div><div class="tabs small"><button id="blocks-tab" class="active">Blocks</button><button id="tx-tab">Transactions</button></div></div>
+  <div class="replay-controls"><label>Object<select id="object"></select></label><button id="follow" aria-pressed="true">Following latest</button><button id="play">Play</button><input id="time" type="range" min="0" max="1000" value="1000" aria-label="Observation replay position"><output id="time-label">All observations</output></div>
+  <p id="replay-note" class="muted"></p><div id="events" class="event-list"></div>
+ </section>
+</main>
+<footer><span>SEED / D61 · Independent observation attachment</span><span id="footer-note">No chain controls. No inferred forwarding paths.</span></footer>
+<script src="/app.js"></script>
+</body></html>

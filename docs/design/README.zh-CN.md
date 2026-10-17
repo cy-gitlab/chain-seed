@@ -1,12 +1,10 @@
-# ChainSeed 拆分设计
+# ChainSeed 架构设计
 
 中文 | [English](README.md)
 
 ## 决策
 
-区块链支持将在一次协调发布中从 `seed-emulator` 整体迁移到独立的
-`chain-seed` 仓库。不设置兼容期，也不为原有 `seedemu.services.*`
-模块提供导入兼容层。
+ChainSeed 作为独立的 SeedEmu 扩展提供区块链服务。
 
 依赖方向固定如下：
 
@@ -24,14 +22,11 @@ seed-emulator -X-> chain-seed
   制品和可观测性。
 - [SeedEmu 集成契约](seedemu-integration.zh-CN.md)：外部 ChainSeed
   软件包需要的公共接口和核心改动。
-- [直接切换迁移](migration.zh-CN.md)：源码映射、实施顺序、联合发布、
-  CI 和验收条件。
 
 英文版本：
 
 - [Architecture](architecture.md)
 - [SeedEmu integration](seedemu-integration.md)
-- [Direct-cut migration](migration.md)
 
 ## 设计规则
 

@@ -197,6 +197,7 @@ class MoneroNetwork:
         return self
 
     def setSeedConnectionMode(self, mode: MoneroSeedConnectionMode) -> "MoneroNetwork":
+        """Set the default seed policy; individual nodes can override it."""
         self._defaults.seed_connection_mode = mode
         return self
 
@@ -355,7 +356,7 @@ class MoneroNetwork:
         wallet: Optional[MoneroWalletSpec] = None,
         binary_source: Optional[MoneroBinarySource] = None,
         mining_trigger: Optional[MoneroMiningTrigger] = None,
-        connect_mode: MoneroSeedConnectionMode = MoneroSeedConnectionMode.EXCLUSIVE,
+        connect_mode: Optional[MoneroSeedConnectionMode] = None,
         options: Optional[MoneroNodeOptions] = None,
     ) -> MoneroBaseServer:
         """Create a full node with seed role and optional mining."""
@@ -394,7 +395,7 @@ class MoneroNetwork:
         wallet: Optional[MoneroWalletSpec] = None,
         binary_source: Optional[MoneroBinarySource] = None,
         mining_trigger: Optional[MoneroMiningTrigger] = None,
-        connect_mode: MoneroSeedConnectionMode = MoneroSeedConnectionMode.EXCLUSIVE,
+        connect_mode: Optional[MoneroSeedConnectionMode] = None,
         options: Optional[MoneroNodeOptions] = None,
     ) -> MoneroBaseServer:
         """Create a full node with client role and optional mining."""
@@ -429,7 +430,7 @@ class MoneroNetwork:
         *,
         wallet: Optional[MoneroWalletSpec] = None,
         binary_source: Optional[MoneroBinarySource] = None,
-        connect_mode: MoneroSeedConnectionMode = MoneroSeedConnectionMode.EXCLUSIVE,
+        connect_mode: Optional[MoneroSeedConnectionMode] = None,
         options: Optional[MoneroNodeOptions] = None,
     ) -> MoneroBaseServer:
         """Create a pruned node; wallet stays enabled while mining is disabled."""

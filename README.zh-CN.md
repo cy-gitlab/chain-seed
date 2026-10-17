@@ -24,10 +24,9 @@ ChainSeed 可以导入 `seedemu` 已公开且有文档约束的 API。反方向�
 不得导入或打包 ChainSeed。同时，ChainSeed 服务代码应避免依赖 SeedEmu
 编译器的私有实现，以免 SeedEmu 的正常内部重构不必要地破坏扩展。
 
-## 当前迁移状态
+## 软件包集成
 
-这是从 SeedEmu 提取出的第一版可运行实现。复制后的服务保持原有公开行为，
-但 Python 包归属改为 `chainseed.*`。拆分不要求 SeedEmu 导入 ChainSeed。
+区块链服务使用 `chainseed.*` 导入。
 ChainSeed 服务通过 SeedEmu 现有的 `Node.setBaseSystem` API 声明与编译器无关的
 `SystemProfile`；`ChainSeedDocker` 再把 ChainSeed 自有 profile 映射为对应平台的
 镜像和部署组件。ChainSeed 不再依赖 SeedEmu 的区块链镜像表；区块链实现、
@@ -37,9 +36,12 @@ EthExplorer 部署也由 ChainSeed 负责：Python 集成位于
 SeedEmu 只为编译器子类提供受保护的 Compose 附加服务钩子；`ChainSeedDocker`
 覆写该钩子，并完整拥有 EthExplorer 服务定义与网络接入。上游旧 Explorer 路径仍保留，ChainSEED 使用自己的组件。
 
-仓库不复制生成的 Compose 输出、客户端数据库、大规模原始采样、Xatu 输入
-数据、Python 缓存和 Node 依赖缓存。来源与排除项记录在
-[MIGRATION_SOURCE.md](MIGRATION_SOURCE.md)。
+可在编译前调用 `docker.enableLookingglass("pos", port=8765)`，把
+[Lookingglass](tools/ethereum/lookingglass/README.md) 加入部署。不调用则不生成该服务；
+启用后随 Compose 启停。运行代码和网页资源均包含在 ChainSeed 安装包内。
+
+生成的 Compose 输出、客户端数据库、大规模原始采样、数据集、Python 缓存
+和 Node 依赖缓存不提交到 Git。
 
 ## 普通安装
 
@@ -87,8 +89,6 @@ cd seed-workspace
 git clone --branch Docker https://github.com/seed-labs/seed-emulator.git
 git clone https://github.com/seed-labs/chain-seed.git
 
-git -C seed-emulator switch chainseed
-
 python3 -m venv .venv
 source .venv/bin/activate
 
@@ -99,21 +99,15 @@ python -m pip install -e "./chain-seed[dev]"
 本地编译检查和完整 Docker 生命周期使用与 CI 相同的入口：
 
 ```bash
-chainseed-test compile chain-seed/examples/ethereum/D01_ethereum_pos/example.yaml
-chainseed-test all chain-seed/examples/ethereum/D01_ethereum_pos/example.yaml
+chainseed-test compile chain-seed/examples/D01_ethereum_pos/example.yaml
+chainseed-test all chain-seed/examples/D01_ethereum_pos/example.yaml
 ```
 
-只有进行大规模实验时才需要安装 `fidelity` 可选依赖：
-
-```bash
-python -m pip install -e "./chain-seed[dev,fidelity]"
-```
-
-共享网络定义位于 `examples/ethereum/D00_ethereum_poa/mini_internet.py`，调用 SeedEmu 公开网络 API，支持 mini/full/hybrid 拓扑和网络 `.bin` 导出。
+共享网络定义位于 `examples/D00_ethereum_poa/mini_internet.py`，调用 SeedEmu 公开网络 API，支持 mini/full/hybrid 拓扑和网络 `.bin` 导出。
 ChainSeed 示例不再依赖 SeedEmu 源码中的顶层 `examples` 目录。
 示例脚本仍位于本仓库 `examples/`，使用时保留整个目录。
 
-迁移后使用显式导入：
+使用显式导入：
 
 ```python
 from seedemu import Binding, Emulator, Filter
@@ -151,13 +145,13 @@ ChainSeed 当前没有单独的 upstream，可以直接从当前远端发布。�
 目录职责：
 
 ```text
-chainseed/   Python 服务层和协议感知测试
+chainseed/       Python 服务层和协议感知测试
 images/          区块链客户端与 Explorer 镜像配方
 tools/           Explorer、钱包和区块链工具
-examples/        按协议分类的小型规范示例
-experiments/     不包含原始输出的大规模可复现实验
-tests/           轻量 API 检查和旧测试迁移参考
-docs/            架构与直接切换迁移设计
+examples/        按 D 编号排列的示例，D61 包含三种链的大规模部署
+experiments/     历史原型和示例
+tests/           软件包、编译器与运行器检查
+docs/            架构、集成与使用手册
 ```
 
 目标架构和仍需补充的 SeedEmu 公共 API 见

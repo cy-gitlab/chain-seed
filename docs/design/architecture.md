@@ -77,37 +77,13 @@ chain-seed/
 ├── chainseed/
 │   ├── extension.py
 │   ├── common/
-│   │   ├── artifacts.py
-│   │   ├── images.py
-│   │   ├── labels.py
-│   │   └── runtime.py
+│   ├── compiler/
 │   ├── ethereum/
-│   │   ├── service.py
-│   │   ├── servers/
-│   │   ├── genesis/
-│   │   ├── accounts/
-│   │   ├── faucet/
-│   │   └── utility/
+│   │   └── lookingglass/
 │   ├── monero/
-│   │   ├── service.py
-│   │   ├── servers/
-│   │   ├── network.py
-│   │   └── wallet.py
 │   ├── solana/
-│   │   ├── service.py
-│   │   ├── servers/
-│   │   └── cluster.py
 │   ├── chainlink/
-│   │   ├── service.py
-│   │   ├── servers/
-│   │   └── templates/
-│   ├── observability/
-│   │   ├── schema.py
-│   │   ├── collectors/
-│   │   └── visualization/
 │   └── testing/
-│       ├── probes/
-│       └── runtime/
 ├── images/
 │   ├── ethereum/
 │   ├── ethexplorer/
@@ -115,24 +91,26 @@ chain-seed/
 │   ├── solana/
 │   └── chainlink/
 ├── tools/
-│   ├── etherview/
-│   ├── wallet/
-│   └── lookingglass/
-├── examples/
+│   ├── blockchain/
 │   ├── ethereum/
-│   ├── monero/
-│   ├── solana/
-│   ├── chainlink/
-│   └── large_scale/
-├── experiments/
-│   ├── configs/
-│   ├── manifests/
-│   └── scripts/
+│   │   ├── large_scale/
+│   │   ├── lookingglass/
+│   │   └── transaction_generator/
+│   ├── monero/large_scale/
+│   └── solana/large_scale/
+├── examples/
+│   ├── D00_ethereum_poa/
+│   ├── D01_ethereum_pos/
+│   ├── ...
+│   ├── D60_monero/
+│   ├── D61_large_scale/
+│   │   ├── ethereum/
+│   │   ├── monero/
+│   │   └── solana/
+│   ├── D70_solana/
+│   └── ...
+├── experiments/legacy/
 ├── tests/
-│   ├── unit/
-│   ├── render/
-│   ├── runtime/
-│   └── integration/
 └── docs/
 ```
 
@@ -397,18 +375,17 @@ Git stores reproducible inputs and compact derived results:
 - external-data manifests and checksums;
 - plotting code.
 
-Raw packet captures, Xatu extracts, generated deployments, client databases,
-container logs, and long-duration sample streams live in an external data
-store. A dataset manifest records:
+Raw packet captures, generated deployments, client databases, container logs,
+and long-duration sample streams live in an external data store. A dataset manifest records:
 
 ```text
 dataset_id, schema_version, source_uri, sha256, bytes,
 created_at, generator_commit, seedemu_version, chainseed_version
 ```
 
-The current D61 large-scale directory is migrated by content class, not copied
-as a whole. Reproducible source moves to Git; large generated data is uploaded
-and replaced by manifests.
+Large-scale deployment examples live in `examples/D61_large_scale/<protocol>/`,
+with observation and workload tools under `tools/<protocol>/`. Generated
+deployments and sampled data are not committed to Git.
 
 ## Versioning
 

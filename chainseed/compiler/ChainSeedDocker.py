@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Mapping
+from pathlib import Path
 from seedemu.compiler import Docker, DockerImage, Platform
 from seedemu.core import Emulator, SystemProfile
 
@@ -63,6 +64,21 @@ class ChainSeedDocker(Docker):
         catalog.update(IMAGE_CATALOG[platform])
         return catalog
 
+    def enableLookingglass(
+        self, chain_name: str, port: int = 8765, *, probe_peers: bool = True,
+        run_dir: str | Path | None = None, explorer_url: str = "",
+        peer_interval: float = 10, peer_jobs: int = 8,
+        metrics_interval: float = 10,
+    ) -> "ChainSeedDocker":
+        """Add the optional Ethereum Lookingglass service to the deployment."""
+        from ..ethereum.Lookingglass import Lookingglass
+
+        return self.addComponent(Lookingglass(
+            chain_name, port, probe_peers=probe_peers, run_dir=run_dir,
+            explorer_url=explorer_url, peer_interval=peer_interval,
+            peer_jobs=peer_jobs, metrics_interval=metrics_interval,
+        ))
+
     def _getAdditionalComposeServices(
         self, emulator: Emulator
     ) -> Mapping[str, Mapping[str, Any]]:
@@ -107,7 +123,12 @@ class ChainSeedDocker(Docker):
 
     def _doCompile(self, emulator: Emulator):
         self._registerMoneroOverrides(emulator)
-        return super()._doCompile(emulator)
+        result = super()._doCompile(emulator)
+        for component in self.__components:
+            writer = getattr(component, "writeOutputFiles", None)
+            if writer is not None:
+                writer(emulator, Path.cwd())
+        return result
 
 
 __all__ = ["ChainSeedDocker"]

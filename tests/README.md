@@ -8,13 +8,13 @@ functional-test, and cleanup stages locally and in GitHub Actions.
 For example:
 
 ```bash
-chainseed-test compile examples/ethereum/D01_ethereum_pos/example.yaml
-chainseed-test all examples/ethereum/D01_ethereum_pos/example.yaml
+chainseed-test compile examples/D01_ethereum_pos/example.yaml
+chainseed-test all examples/D01_ethereum_pos/example.yaml
 ```
 
-`test_public_imports.py` remains a lightweight package/API check. The files in
-`protocol/` are legacy protocol tests retained as migration references; new
-coverage belongs in example manifests and runtime programs.
+`test_public_imports.py` is a lightweight package/API check. Runtime coverage
+belongs in example manifests and runtime programs, shared by local runs and
+GitHub Actions.
 
 ChainSeed CI checks out SeedEmu `Docker`, installs it in editable mode,
 and verifies the installed ChainSEED wheel and copied examples. Upstream SeedEmu

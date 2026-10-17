@@ -95,7 +95,7 @@ def test_diagnostic_failure_does_not_prevent_cleanup():
 def test_lighthouse_probes_do_not_match_their_own_shell():
     import yaml
 
-    examples = Path(__file__).resolve().parents[1] / "examples/ethereum"
+    examples = Path(__file__).resolve().parents[1] / "examples"
     checked = 0
     for manifest in examples.glob("*/example.yaml"):
         for probe in yaml.safe_load(manifest.read_text()).get("probes", []):

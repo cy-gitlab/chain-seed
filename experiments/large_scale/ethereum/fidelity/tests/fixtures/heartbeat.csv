@@ -1,8 +1,0 @@
-event_date_time,remote_peer_id_unique_key,direction,connection_age_ms,latency_ms,remote_agent_implementation,remote_agent_version,remote_geo_country_code,remote_geo_autonomous_system_number,meta_client_name,meta_client_implementation,meta_client_version,meta_client_geo_country_code,meta_client_geo_autonomous_system_number,meta_network_name
-2026-07-16T12:00:05Z,101,Outbound,300000,15,Lighthouse,v7.0.1,DE,24940,A,Lighthouse,v7.0.1,US,16509,mainnet
-2026-07-16T12:00:08Z,102,Inbound,240000,20,Prysm,v6.0.0,US,16509,A,Lighthouse,v7.0.1,US,16509,mainnet
-2026-07-16T12:00:12Z,103,Outbound,180000,25,Lighthouse,v7.0.1,FI,24940,D,Teku,v25.1,GB,8075,mainnet
-2026-07-16T12:05:05Z,104,Outbound,120000,30,Nimbus,v25.2,FR,16276,A,Lighthouse,v7.0.1,US,16509,mainnet
-2026-07-16T12:05:07Z,105,Inbound,90000,35,Lighthouse,v7.0.1,NL,14061,D,Teku,v25.1,GB,8075,mainnet
-2026-07-16T12:05:09Z,106,Outbound,60000,40,Lodestar,v1.28,CA,16276,D,Teku,v25.1,GB,8075,mainnet
-

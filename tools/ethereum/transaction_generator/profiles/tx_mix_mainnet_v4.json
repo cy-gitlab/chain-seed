@@ -1,0 +1,13 @@
+{
+  "native_transfer": 31.6839,
+  "erc20_transfer": 30.4803,
+  "generic_contract_medium": 14.0826,
+  "generic_contract_heavy": 9.5467,
+  "generic_contract_light": 6.2499,
+  "erc20_approve": 3.5743,
+  "dex_swap": 2.2243,
+  "token_transfer_from": 1.4688,
+  "nft_action": 0.4113,
+  "account_abstraction": 0.1969,
+  "contract_deploy": 0.0811
+}
