@@ -3,6 +3,10 @@ from seedemu.core import Node, Server
 from .EthEnum import *
 from .EthUtil import *
 from typing import TYPE_CHECKING, List
+import shlex
+import yaml
+from .RuntimeConfig import EthereumRuntimeConfig, BeaconRuntimeConfig, integer
+from .GethPeers import GethPeerConfig
 from .EthTemplates import (
     BEACON_BOOTNODE_HTTP_SERVER,
     BEACON_GENESIS,
@@ -18,7 +22,7 @@ if TYPE_CHECKING:
 
 ETH_LABEL_META = 'ethereum.{key}'
 
-class EthereumServer(Server):
+class EthereumServer(EthereumRuntimeConfig, Server):
     """!
     @brief The Ethereum Server
     """
@@ -62,6 +66,7 @@ class EthereumServer(Server):
 
         super().__init__()
 
+        self._initRuntimeConfig()
         self._id = id
         self._blockchain = blockchain
         self._is_bootnode = False
@@ -115,13 +120,16 @@ class EthereumServer(Server):
         if self._enable_ws:
             self._geth_options['ws'] = GethCommandTemplates['ws'].format(gethWsPort=self._geth_ws_port, extra_apis="" if self._consensus_mechanism.POS else ",personal,clique")
         if self._custom_geth_command_option:
-            self._geth_options['custom'] = self._custom_geth_command_option
+            self._geth_options['custom'] = ' ' + self._custom_geth_command_option
         if self._unlock_accounts:
             accounts = []
             for account in self._accounts:
                 accounts.append(account.address)
             self._geth_options['unlock'] = GethCommandTemplates['unlock'].format(accounts=', '.join(accounts))
         self._geth_start_command = GethCommandTemplates['base'].format(node_id=self._id, chain_id=self._blockchain.getChainId(), datadir=self._data_dir, syncmode=self._syncmode.value, snapshot=self._snapshot, allow_insecure_unlock="" if self._consensus_mechanism == ConsensusMechanism.POS else "--allow-insecure-unlock", option=self._geth_options)
+        self._geth_start_command = self._gethRuntimeCommand(self._geth_start_command)
+        if isinstance(self, GethPeerConfig):
+            self._geth_start_command = self._gethPeerCommand(self._geth_start_command)
         
     def install(self, node: Node, eth: EthereumService):
         """!
@@ -190,7 +198,7 @@ class EthereumServer(Server):
     
     # get other nodes IP for the bootstrapper.
         bootnodes = self._blockchain.getBootNodes()[:]
-        if len(bootnodes) > 0:
+        if len(bootnodes) > 0 and not self._no_discover:
             node.setFile('/tmp/geth-eth-nodes', '\n'.join(bootnodes))
             
             node.setFile('/tmp/eth-bootstrapper', EthServerFileTemplates['bootstrapper'])
@@ -210,7 +218,7 @@ class EthereumServer(Server):
 
         if len(beacon_bootnodes) > 0 and isinstance(self, PoSBeaconServer):
             node.setFile('/tmp/beacon-eth-nodes', '\n'.join(beacon_bootnodes))
-        if len(geth_bootnodes) > 0 and isinstance(self, PoSGethServer):
+        if len(geth_bootnodes) > 0 and isinstance(self, PoSGethServer) and not self._no_discover:
             node.setFile('/tmp/geth-eth-nodes', '\n'.join(geth_bootnodes))
 
             node.setFile('/tmp/eth-bootstrapper', EthServerFileTemplates['bootstrapper'])
@@ -218,7 +226,8 @@ class EthereumServer(Server):
             node.appendStartCommand('/tmp/eth-bootstrapper')
             # node.appendStartCommand(self._geth_start_command, True)
         # launch Ethereum process.
-        if isinstance(self, PoSGethServer) or isinstance(self, PoAServer):
+        if isinstance(self, GethPeerConfig):
+            self._installGethPeers(node)
             node.appendStartCommand(self._geth_start_command, True) 
         
 
@@ -235,6 +244,7 @@ class EthereumServer(Server):
 
         @returns self, for chaining API calls.
         """
+        self._assertConfigurable()
         assert path.exists(customGethBinaryPath), "EthereumServer::setCustomGeth: custom geth binary file does not exist. path : {}".format(customGethBinaryPath)
 
         self._custom_geth_binary_path = path.abspath(customGethBinaryPath)
@@ -249,6 +259,7 @@ class EthereumServer(Server):
 
         @returns self, for chaining API calls.
         """
+        self._assertConfigurable()
         assert customOptions.startswith("--"), "option should start with '--'"
         assert ";" not in customOptions, "letter ';' cannot contain in the options"
         assert "&" not in customOptions, "letter '|' cannot contain in the options"
@@ -266,6 +277,7 @@ class EthereumServer(Server):
 
         @returns self, for chaining API calls.
         """
+        self._assertConfigurable()
         self._syncmode = syncmode
         return self
 
@@ -273,6 +285,7 @@ class EthereumServer(Server):
         """
         @brief setting the automatic peer discovery to true/false
         """
+        self._assertConfigurable()
         self._no_discover = noDiscover
         return self
 
@@ -284,6 +297,7 @@ class EthereumServer(Server):
 
         @returns self, for chaining API calls.
         """
+        self._assertConfigurable()
         self._snapshot = snapshot
         return self
 
@@ -303,6 +317,7 @@ class EthereumServer(Server):
         
         @returns self, for chaining API calls.
         """
+        self._assertConfigurable()
         self._is_bootnode = isBootNode
 
         return self
@@ -340,6 +355,7 @@ class EthereumServer(Server):
         @param port port
         @returns self, for chaining API calls.
         """
+        self._assertConfigurable()
 
         self._bootnode_http_port = port
 
@@ -360,6 +376,7 @@ class EthereumServer(Server):
         @param port port
         @returns self, for chaining API calls
         """
+        self._assertConfigurable()
         
         self._geth_http_port = port
         
@@ -381,6 +398,7 @@ class EthereumServer(Server):
 
         @returns self, for chaining API calls
         """
+        self._assertConfigurable()
         
         self._geth_ws_port = port
         
@@ -399,6 +417,7 @@ class EthereumServer(Server):
         """!
         @brief setting a geth to enable http connection 
         """
+        self._assertConfigurable()
         self._enable_http = True
 
         return self
@@ -413,6 +432,7 @@ class EthereumServer(Server):
         """!
         @brief setting a geth to enable ws connection
         """
+        self._assertConfigurable()
         self._enable_ws = True
 
         return self
@@ -567,7 +587,7 @@ class EthereumServer(Server):
         return self._blockchain
 
 
-class PoAServer(EthereumServer):
+class PoAServer(GethPeerConfig, EthereumServer):
     def __init__(self, id: int, blockchain: Blockchain):
         """!
         @brief Create new eth server.
@@ -589,7 +609,7 @@ class PoAServer(EthereumServer):
         super()._generateGethStartCommand(addr)
         
 
-class PoWServer(EthereumServer):
+class PoWServer(GethPeerConfig, EthereumServer):
     def __init__(self, id:int, blockchain:Blockchain):
         """!
         @brief Create new eth server.
@@ -648,7 +668,7 @@ class PoSServer(EthereumServer):
 
         bootnode_start_command = ""
         bc_start_command = ""
-        bc_start_command = LIGHTHOUSE_BN_CMD.format(ip_address=addr, target_peers=self.__beacon_peer_counts, bootnodes_flag="" if self._is_bootnode else f'--boot-nodes "$(cat /tmp/bc_enrs.txt)"')
+        bc_start_command = LIGHTHOUSE_BN_CMD.format(ip_address=addr, target_peers=self.__beacon_peer_counts, beacon_options="--reconstruct-historic-states", remote_geth=addr, bootnodes_flag="" if self._is_bootnode else f'--boot-nodes "$(cat /tmp/bc_enrs.txt)"')
         vc_start_command = ""
         wallet_create_command = ""
         validator_create_command = ""
@@ -695,10 +715,11 @@ class PoSServer(EthereumServer):
             # this validator idx will be used to create validator keys properly. 
             # Each validator at genesis node has 4 keys which were set at Genesis
 
-        node.setFile('/tmp/beacon-bootstrapper', EthServerFileTemplates['beacon_bootstrapper'].format( 
+        node.setFile('/tmp/beacon-bootstrapper', EthServerFileTemplates['beacon_bootstrapper'].format(
+                                **self._bootstrapTemplateOptions(),
                                 is_validator_at_genesis="true" if self.__is_beacon_validator_at_genesis else "false",
                                 is_validator_at_running="true" if self.__is_beacon_validator_at_running else "false",
-                                validator_mnemonic=self.__validator_mnemonic,
+                                validator_mnemonic=shlex.quote(self.__validator_mnemonic),
                                 validator_key_start= validator_idx ,
                                 validator_key_end= (validator_idx + 1),
                                 bc_start_command=bc_start_command,
@@ -728,6 +749,7 @@ class PoSServer(EthereumServer):
         self.__install_beacon(node, eth)
 
     def enablePOSValidatorAtGenesis(self):
+        self._assertConfigurable()
         self.__is_beacon_validator_at_genesis = True
         return self
 
@@ -738,6 +760,7 @@ class PoSServer(EthereumServer):
         return self.__is_beacon_validator_at_running
 
     def enablePOSValidatorAtRunning(self, is_manual:bool=False):
+        self._assertConfigurable()
         self.__is_beacon_validator_at_running = True
         self.__is_manual_deposit_for_validator = is_manual
         return self
@@ -752,6 +775,7 @@ class PoSServer(EthereumServer):
         
         @param mnemonic The mnemonic to set.
         """
+        self._assertConfigurable()
         self.__validator_mnemonic = mnemonic
         return self
 
@@ -759,6 +783,7 @@ class PoSServer(EthereumServer):
         return self.__is_beacon_setup_node
 
     def setBeaconSetupNode(self, port=8090):
+        self._assertConfigurable()
         self.__is_beacon_setup_node = True
         self.__beacon_setup_http_port = port
         return self
@@ -771,6 +796,7 @@ class PoSServer(EthereumServer):
     #     return self
 
     def setBeaconPeerCounts(self, peer_counts:int):
+        self._assertConfigurable()
         self.__beacon_peer_counts = peer_counts
         return self
     
@@ -778,12 +804,13 @@ class PoSServer(EthereumServer):
         return self.__beacon_setup_http_port
 
     def setBeaconSetupHttpPort(self, port:int):
+        self._assertConfigurable()
         self.__beacon_setup_http_port = port
         return self
 
 
 
-class PoSGethServer(EthereumServer):
+class PoSGethServer(GethPeerConfig, EthereumServer):
     def __init__(self, id: int, blockchain:Blockchain):
         """!
         @brief Create new geth server.
@@ -801,7 +828,7 @@ class PoSGethServer(EthereumServer):
         #     return 
         super().install(node,eth)
         node.setFile('/tmp/jwt.hex', '0xae7177335e3d4222160e08cecac0ace2cecce3dc3910baada14e26b11d2009fc')
-class PoSBeaconServer(EthereumServer):
+class PoSBeaconServer(BeaconRuntimeConfig, EthereumServer):
     __beacon_peer_counts:int
     def __init__(self, id: int, blockchain:Blockchain):
 
@@ -813,6 +840,7 @@ class PoSBeaconServer(EthereumServer):
 
         super().__init__(id, blockchain)
  
+        self._initBeaconRuntimeConfig()
         self.__beacon_peer_counts = 30
         self.__connect_geth_vnode = ""
         self.__connected_geth_ip = ""
@@ -850,7 +878,7 @@ class PoSBeaconServer(EthereumServer):
     
         # connect_geth_node = self.__blockchain.getIpByVnodeName(self.__connect_geth_vnode)
         bootnode_start_command = ""
-        bc_start_command = LIGHTHOUSE_BN_CMD.format(ip_address=addr, target_peers=self.__beacon_peer_counts, bootnodes_flag="" if self._is_bootnode else f'--boot-nodes "$(cat /tmp/bc_enrs.txt)"',remote_geth=geth_node_ip)
+        bc_start_command = LIGHTHOUSE_BN_CMD.format(ip_address=addr, target_peers=self.__beacon_peer_counts, beacon_options=self._beaconRuntimeArguments(), bootnodes_flag="" if self._is_bootnode else f'--boot-nodes "$(cat /tmp/bc_enrs.txt)"',remote_geth=geth_node_ip)
         # bc_start_command = LIGHTHOUSE_BN_CMD.format(ip_address=addr, target_peers=self.__beacon_peer_counts, bootnodes_flag="" if self._is_bootnode else f'--boot-nodes "$(cat /tmp/bc_enrs.txt)"', viewer_cmd = f'--reconstruct-historic-states' if self.isBeaconViewer() else "",remote_geth=geth_node_ip)
 
         ## div beacon node and geth node
@@ -895,7 +923,8 @@ class PoSBeaconServer(EthereumServer):
         #     # this validator idx will be used to create validator keys properly. 
         #     # Each validator at genesis node has 4 keys which were set at Genesis
 
-        node.setFile('/tmp/beacon-bootstrapper', EthServerFileTemplates['beacon_bootstrapper'].format( 
+        node.setFile('/tmp/beacon-bootstrapper', EthServerFileTemplates['beacon_bootstrapper'].format(
+                                **self._bootstrapTemplateOptions(),
                                 bc_start_command=bc_start_command,
                     ))
         node.setFile('/tmp/jwt.hex', '0xae7177335e3d4222160e08cecac0ace2cecce3dc3910baada14e26b11d2009fc')
@@ -904,10 +933,13 @@ class PoSBeaconServer(EthereumServer):
         node.appendStartCommand('/tmp/beacon-bootstrapper')
 
     def setBeaconPeerCounts(self, peer_counts:int):
+        self._assertConfigurable()
         self.__beacon_peer_counts = peer_counts
         return self
     def connectToGethNode(self, vnode:str):
+        self._assertConfigurable()
         self.__connect_geth_vnode = vnode
+        return self
         return self
 
     def setConnectedGethIp(self, ip:str):
@@ -928,6 +960,7 @@ class PoSBeaconServer(EthereumServer):
         
         @param mnemonic The mnemonic to set.
         """
+        self._assertConfigurable()
         self.__validator_mnemonic = mnemonic
         return self
 
@@ -943,8 +976,23 @@ class PoSBeaconSetupServer(EthereumServer):
         @brief BeaconSetupServer constructor.
         """
         super().__init__(id, blockchain)
+        self._genesis_delay = 0
         self.__beacon_setup_http_port = 8090
         self.__validator_mnemonic = "giant issue aisle success illegal bike spike question tent bar rely arctic volcano long crawl hungry vocal artwork sniff fantasy very lucky have athlete"
+
+    def setGenesisDelay(self, seconds: int):
+        """Set genesis time relative to this setup container's startup time."""
+        self._assertConfigurable()
+        self._genesis_delay = integer(seconds, "genesis delay seconds", minimum=0)
+        return self
+
+    def setValidatorMnemonic(self, mnemonic: str):
+        """Set the common derivation mnemonic used by genesis and all genesis VCs."""
+        self._assertConfigurable()
+        if not isinstance(mnemonic, str) or not mnemonic.strip():
+            raise ValueError("validator mnemonic must be a non-empty string")
+        self.__validator_mnemonic = mnemonic.strip()
+        return self
 
     def install(self, node: Node,eth: EthereumService ):
         """!
@@ -968,20 +1016,15 @@ class PoSBeaconSetupServer(EthereumServer):
         self.__genesis = self._blockchain.getGenesis()
 
         node.setFile('/tmp/eth1-genesis.json', self.__genesis.getGenesis())
-        mnemonic_lines = []
-        for idx, vid in enumerate(validator_ids):
+        mnemonics = []
+        for vid in validator_ids:
             wd_address = self._blockchain.getValidatorWithdrawAddress(vid)
             assert wd_address, f"PoSBeaconSetupServer::install: missing withdraw address for validator id {vid}."
-            mnemonic_lines.append(
-                f'- mnemonic: "{self.getValidatorMnemonic()}"\n'
-                f"  start: {idx}\n"
-                "  count: 1\n"
-                "  balance: 32000000000\n"
-                f'  wd_address: "{wd_address}"\n'
-                '  wd_prefix: "0x01"\n'
-                "  status: 0\n"
-            )
-        node.setFile("/tmp/mnemonic.yaml", "\n".join(mnemonic_lines))
+            first, end = self._blockchain.getValidatorKeyRange(vid)
+            mnemonics.append(dict(mnemonic=self.getValidatorMnemonic(), start=first,
+                                  count=end-first, balance=32000000000,
+                                  wd_address=wd_address, wd_prefix="0x01", status=0))
+        node.setFile("/tmp/mnemonic.yaml", yaml.safe_dump(mnemonics, sort_keys=False))
         node.appendStartCommand('mkdir /local-testnet/testnet')
         # [remove] node.appendStartCommand('bootnode_enr=`cat /local-testnet/bootnode/enr.dat`')
         # [remove] node.appendStartCommand('echo "- $bootnode_enr" > /local-testnet/testnet/boot_enr.yaml')
@@ -996,7 +1039,10 @@ class PoSBeaconSetupServer(EthereumServer):
         node.appendStartCommand('cp /tmp/mnemonic.yaml /local-testnet/testnet/mnemonic.yaml')
         node.appendStartCommand('cp /tmp/eth1-genesis.json /local-testnet/testnet/eth1-genesis.json')
 
-        node.appendStartCommand('GENESIS_TIME=`date +%s`')
+        if self._genesis_delay:
+            node.appendStartCommand(f'GENESIS_TIME=$(( $(date +%s) + {self._genesis_delay} ))')
+        else:
+            node.appendStartCommand('GENESIS_TIME=`date +%s`')
         node.appendStartCommand('''echo 'MIN_GENESIS_TIME: "'$GENESIS_TIME'"' >> /local-testnet/testnet/config.yaml''')
         # node.appendStartCommand('''CONTRACT_ADDRESS=`head -1 contract_ad    dress.txt | cut -d '"' -f 2`''')
         # node.appendStartCommand('''echo 'DEPOSIT_CONTRACT_ADDRESS: "'$CONTRACT_ADDRESS'"' >> /local-testnet/testnet/config.yaml''')
@@ -1015,6 +1061,7 @@ class PoSBeaconSetupServer(EthereumServer):
         return self.__beacon_setup_http_port
 
     def setBeaconSetupHttpPort(self, port:int) -> BeaconSetupServer:
+        self._assertConfigurable()
         self.__beacon_setup_http_port = port
         return self
 
@@ -1036,6 +1083,7 @@ class PoSVcServer(EthereumServer):
         @param id The serial number of this server.
         """
         super().__init__(id, blockchain)
+        self._validator_key_count = 1
         self.__is_beacon_validator_at_genesis = False
         self.__is_beacon_validator_at_running = False
         self.__is_manual_deposit_for_validator = False
@@ -1053,6 +1101,15 @@ class PoSVcServer(EthereumServer):
         self.__conect_beacon_vnode :str =""
         self.__connected_beacon_ip :str = ""
 
+
+    def setValidatorKeyCount(self, count: int):
+        """Set how many genesis validator identities this VC manages (default 1)."""
+        self._assertConfigurable()
+        self._validator_key_count = integer(count, "validator key count")
+        return self
+
+    def getValidatorKeyCount(self) -> int:
+        return self._validator_key_count
 
     def _createAccounts(self, eth:EthereumService) -> EthereumServer:
         """!
@@ -1089,6 +1146,7 @@ class PoSVcServer(EthereumServer):
 
         @param address The withdraw account address.
         """
+        self._assertConfigurable()
         if address == "":
             return self
         assert address, "PoSVcServer::setWithdrawAddress: address cannot be empty."
@@ -1104,6 +1162,7 @@ class PoSVcServer(EthereumServer):
         @param index The index of the withdraw account.
         @param password The password to use.
         """
+        self._assertConfigurable()
         if mnemonic == "":
             return self
         assert mnemonic, "PoSVcServer::setWithdrawMnemonic: mnemonic cannot be empty."
@@ -1182,26 +1241,17 @@ class PoSVcServer(EthereumServer):
         node.setFile('/tmp/beacon-setup-node', beacon_setup_node)
         node.setFile('/tmp/withdraw-address', self.getWithdrawAddress())
         
-        # get current node validator index if it's validator at genesis.
-        validatorIds = self._blockchain.getValidatorIds()
-        validator_idx = -1
+        validator_key_start, validator_key_end = -1, 0
         if self.isValidatorAtGenesis():
-            # only get validator id if current node is validator at genesis.
-            for i, v in enumerate(validatorIds):
-                if int(v) == self._id:
-                    validator_idx = i
-                    break 
-            assert validator_idx >= 0, "EthereumServer::__install_beacon: validator id should be set at genesis."
-            validator_idx = int(validator_idx)
-            # this validator idx will be used to create validator keys properly. 
-            # Each validator at genesis node has 4 keys which were set at Genesis
+            validator_key_start, validator_key_end = self._blockchain.getValidatorKeyRange(str(self._id))
 
-        node.setFile('/tmp/vc_bootstrapper', EthServerFileTemplates['vc_bootstrapper'].format( 
+        node.setFile('/tmp/vc_bootstrapper', EthServerFileTemplates['vc_bootstrapper'].format(
+                                **self._bootstrapTemplateOptions(),
                                 is_validator_at_genesis="true" if self.__is_beacon_validator_at_genesis else "false",
                                 is_validator_at_running="true" if self.__is_beacon_validator_at_running else "false",
-                                validator_mnemonic=self.__validator_mnemonic,
-                                validator_key_start= validator_idx ,
-                                validator_key_end= (validator_idx + 1),
+                                validator_mnemonic=shlex.quote(self._blockchain.getBeaconSetupServer().getValidatorMnemonic()),
+                                validator_key_start=validator_key_start,
+                                validator_key_end=validator_key_end,
                                 vc_start_command=vc_start_command,
                                 wallet_create_command=wallet_create_command,
                                 validator_create_command=validator_create_command,
@@ -1215,6 +1265,7 @@ class PoSVcServer(EthereumServer):
 
 
     def connectToBeaconNode(self, vnode:str):
+        self._assertConfigurable()
         self.__conect_beacon_vnode = vnode
         return self
     def setConnectedBeaconIp(self, ip:str):
@@ -1225,9 +1276,11 @@ class PoSVcServer(EthereumServer):
     def getConnectBeaconVNode(self) -> str:
         return self.__conect_beacon_vnode
     def enablePOSValidatorAtGenesis(self):
+        self._assertConfigurable()
         self.__is_beacon_validator_at_genesis = True
         return self
     def enablePOSValidatorAtRunning(self, is_manual:bool=False):
+        self._assertConfigurable()
         self.__is_beacon_validator_at_running = True
         self.__is_manual_deposit_for_validator = is_manual
         return self       

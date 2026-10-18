@@ -71,7 +71,10 @@ class PeerProbe:
             return False
 
     def metrics(self, node):
-        payload = fetch(f"http://{node['ip']}:5054/metrics", raw=True)
+        port = node.get("metrics_port", 5054)
+        if port is None:
+            return []
+        payload = fetch(f"http://{node['ip']}:{port}/metrics", raw=True)
         values = {}
         for line in payload.splitlines():
             match = re.match(r'^(beacon_processor_[\w]+|libp2p_peers)(?:\{([^}]*)\})?\s+(\S+)', line)

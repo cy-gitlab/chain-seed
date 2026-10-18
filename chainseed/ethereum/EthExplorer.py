@@ -33,6 +33,7 @@ ETH_EXPLORER_SERVICE_NAMES = (
 class _Endpoint:
     address: str
     network: Network
+    port: int
 
 
 class EthExplorer:
@@ -44,6 +45,9 @@ class EthExplorer:
         port: int = 5000,
         backend_image: str = ETH_EXPLORER_BACKEND_IMAGE,
         web_image: str = ETH_EXPLORER_WEB_IMAGE,
+        *,
+        geth_vnode: str | None = None,
+        beacon_vnode: str | None = None,
     ):
         if not isinstance(chain_name, str) or not chain_name.strip():
             raise ValueError("chain_name must be a non-empty string")
@@ -53,11 +57,16 @@ class EthExplorer:
             raise ValueError("backend_image must be a non-empty string")
         if not isinstance(web_image, str) or not web_image.strip():
             raise ValueError("web_image must be a non-empty string")
+        for name, value in (("geth_vnode", geth_vnode), ("beacon_vnode", beacon_vnode)):
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(f"{name} must be a non-empty virtual node name or None")
 
         self.__chain_name = chain_name
         self.__port = port
         self.__backend_image = backend_image
         self.__web_image = web_image
+        self.__geth_vnode = geth_vnode
+        self.__beacon_vnode = beacon_vnode
 
     def getComposeServices(
         self,
@@ -77,10 +86,11 @@ class EthExplorer:
         if not isinstance(ethereum, EthereumService):
             raise RuntimeError("EthereumService is not installed in the emulator")
 
-        geth = self.__select_target(ethereum, PoSGethServer, "Geth")
-        beacon = self.__select_target(ethereum, PoSBeaconServer, "Beacon")
-        geth_endpoint = self.__endpoint(geth)
-        beacon_endpoint = self.__endpoint(beacon)
+        geth, geth_node = self.__select_target(ethereum, PoSGethServer, "Geth", self.__geth_vnode)
+        _, beacon_node = self.__select_target(ethereum, PoSBeaconServer, "Beacon", self.__beacon_vnode)
+        geth_endpoint = self.__endpoint(geth_node, geth.getGethHttpPort())
+        # The Beacon HTTP API currently has a fixed port in the client template.
+        beacon_endpoint = self.__endpoint(beacon_node, 8000)
 
         emulated_networks = []
         for network in (geth_endpoint.network, beacon_endpoint.network):
@@ -89,12 +99,27 @@ class EthExplorer:
                 emulated_networks.append(name)
 
         return self.__services(
-            geth_endpoint.address,
-            beacon_endpoint.address,
+            geth_endpoint,
+            beacon_endpoint,
             tuple(emulated_networks),
         )
 
-    def __select_target(self, ethereum: EthereumService, server_type, role: str) -> Node:
+    def __select_target(self, ethereum: EthereumService, server_type, role: str,
+                        vnode: str | None):
+        if vnode is not None:
+            server = ethereum.getPendingTargets().get(vnode)
+            if server is None:
+                raise ValueError(f"EthExplorer {role} virtual node {vnode!r} does not exist")
+            if not isinstance(server, server_type):
+                raise ValueError(f"EthExplorer virtual node {vnode!r} must be a PoS {role} server")
+            if server.getBlockchain().getChainName() != self.__chain_name:
+                raise ValueError(f"EthExplorer virtual node {vnode!r} is not in chain {self.__chain_name!r}")
+            self.__require_capability(server, role, vnode)
+            for target_server, node in ethereum.getTargets():
+                if target_server is server:
+                    return server, node
+            raise RuntimeError(f"EthExplorer virtual node {vnode!r} has no rendered target")
+
         targets = [
             (server, node)
             for server, node in ethereum.getTargets()
@@ -108,15 +133,31 @@ class EthExplorer:
                     role,
                 )
             )
+        targets = [(server, node) for server, node in targets if self.__capable(server, role)]
+        if not targets:
+            requirement = ("enableGethHttp()" if role == "Geth" else
+                           "setReconstructHistoricStates(True)")
+            raise ValueError(f"EthExplorer chain {self.__chain_name!r} needs a {role} server with {requirement}")
         targets.sort(
             key=lambda target: (
                 target[1].getRegistryInfo(),
                 target[0].getId(),
             )
         )
-        return targets[0][1]
+        return targets[0]
 
-    def __endpoint(self, node: Node) -> _Endpoint:
+    @staticmethod
+    def __capable(server, role):
+        return (server.isGethHttpEnabled() if role == "Geth" else
+                server.isReconstructHistoricStatesEnabled())
+
+    def __require_capability(self, server, role, vnode):
+        if not self.__capable(server, role):
+            requirement = ("enableGethHttp()" if role == "Geth" else
+                           "setReconstructHistoricStates(True)")
+            raise ValueError(f"EthExplorer virtual node {vnode!r} requires {requirement} before render()")
+
+    def __endpoint(self, node: Node, port: int) -> _Endpoint:
         interfaces = [
             interface
             for interface in node.getInterfaces()
@@ -138,12 +179,12 @@ class EthExplorer:
                     node.getName(),
                 )
             )
-        return _Endpoint(str(address), interface.getNet())
+        return _Endpoint(str(address), interface.getNet(), port)
 
     def __services(
         self,
-        execution_host: str,
-        consensus_host: str,
+        execution: _Endpoint,
+        consensus: _Endpoint,
         emulated_networks: Tuple[str, ...],
     ) -> Mapping[str, Dict[str, object]]:
         explorer_networks = {"default": {}}
@@ -248,8 +289,10 @@ class EthExplorer:
                     "rawbigtable": {"condition": "service_started"},
                 },
                 "environment": [
-                    "EL_HOST={}".format(execution_host),
-                    "CL_HOST={}".format(consensus_host),
+                    "EL_HOST={}".format(execution.address),
+                    "EL_PORT={}".format(execution.port),
+                    "CL_HOST={}".format(consensus.address),
+                    "CL_PORT={}".format(consensus.port),
                 ],
                 "networks": explorer_networks,
             },
@@ -269,8 +312,10 @@ class EthExplorer:
                     "seedemu-ethexplorer-backend": {"condition": "service_healthy"},
                 },
                 "environment": [
-                    "EL_HOST={}".format(execution_host),
-                    "CL_HOST={}".format(consensus_host),
+                    "EL_HOST={}".format(execution.address),
+                    "EL_PORT={}".format(execution.port),
+                    "CL_HOST={}".format(consensus.address),
+                    "CL_PORT={}".format(consensus.port),
                 ],
                 "ports": ["{}:5000/tcp".format(self.__port)],
                 "networks": explorer_networks,

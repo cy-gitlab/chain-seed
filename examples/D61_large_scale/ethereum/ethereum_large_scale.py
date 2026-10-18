@@ -23,7 +23,7 @@ from chainseed.ethereum import (EthereumService, ConsensusMechanism,
 
 DOMAIN = ".large-pos.net"
 LOCAL_ACCOUNT_BALANCE_ETHER = 10**50
-# Temporary example settings; native Service APIs will replace output adapters.
+# Experiment defaults; client options are configured on each Server instance.
 WORKER_CAP = 2
 GETH_CACHE_MIB = 128
 GETH_GOMEMLIMIT_MIB = 384
@@ -85,6 +85,13 @@ def add_ethereum_pos_layer(
     beacon_bootnodes: int,
     geth_bootnodes: int,
     local_account_count: int,
+    *,
+    keys_per_client: int = KEYS_PER_CLIENT,
+    worker_cap: int = WORKER_CAP,
+    geth_cache_mib: int = GETH_CACHE_MIB,
+    geth_gomemlimit_mib: int = GETH_GOMEMLIMIT_MIB,
+    genesis_delay: int = GENESIS_DELAY_SECONDS,
+    reconstruct_historic_states: bool = True,
 ) -> None:
     eth = EthereumService()
     blockchain = eth.createBlockchain(
@@ -102,6 +109,7 @@ def add_ethereum_pos_layer(
     blockchain.setTargetAggregatorPerCommittee(2)
 
     setup: PoSBeaconSetupServer = blockchain.createBeaconSetupNode("beaconsetup")
+    setup.setGenesisDelay(genesis_delay)
     setup.setDisplayName("Ethereum-POS-BeaconSetup")
     setup.appendClassName("Ethereum-POS-BeaconSetup")
     setup.addHostName(f"beaconsetup{DOMAIN}")
@@ -112,6 +120,9 @@ def add_ethereum_pos_layer(
         vnode = f"gethnode{i:03d}"
         geth: PoSGethServer = blockchain.createGethNode(vnode)
         geth.enableGethHttp()
+        geth.setCacheMiB(geth_cache_mib)
+        geth.setGoMemoryLimitMiB(geth_gomemlimit_mib)
+        geth.setRpcTxFeeCap(0)
         geth.appendClassName("Ethereum-POS-Geth")
         geth.appendClassName(f"Ethereum-POS-Geth-{i:03d}")
         geth.setDisplayName(f"Ethereum-POS-Geth-{i:03d}")
@@ -131,6 +142,11 @@ def add_ethereum_pos_layer(
         beacon.addHostName(f"{vnode}{DOMAIN}")
         beacon.connectToGethNode(f"gethnode{i % len(geth_nodes):03d}")
         beacon.setBeaconPeerCounts(beacon_peers)
+        beacon.setProcessorMaxWorkers(worker_cap)
+        beacon.setReconstructHistoricStates(reconstruct_historic_states)
+        beacon.enableMetrics(port=5054)
+        beacon.setBootstrapRetryPolicy(attempts=720, connect_timeout_seconds=5,
+                                       request_timeout_seconds=120)
         if i < beacon_bootnodes:
             beacon.setBootNode(True)
         beacon_nodes.append(beacon)
@@ -145,7 +161,10 @@ def add_ethereum_pos_layer(
         validator.addHostName(f"{vnode}{DOMAIN}")
         beacon_index = _validator_beacon_index(i, validator_count, beacon_count)
         validator.connectToBeaconNode(f"beaconnode{beacon_index:03d}")
+        validator.setValidatorKeyCount(keys_per_client)
         validator.enablePOSValidatorAtGenesis()
+        validator.setBootstrapRetryPolicy(attempts=720, connect_timeout_seconds=5,
+                                          request_timeout_seconds=120)
         _bind(emu, vnode, placements[vnode])
 
     emu.addLayer(eth)
@@ -157,20 +176,25 @@ def run(output=SCRIPT_DIR / "output", beacons=100, stub_as_count=64,
         worker_cap=WORKER_CAP, geth_gomemlimit_mib=GETH_GOMEMLIMIT_MIB,
         genesis_delay=GENESIS_DELAY_SECONDS, beacon_peers=32, override=False,
         image=None, dry_run=False, lookingglass=False, lookingglass_port=8765,
-        lookingglass_run_dir=None):
+        lookingglass_run_dir=None, geth_cache_mib=GETH_CACHE_MIB,
+        reconstruct_historic_states=True):
     placements, counts = plan_placements(beacons, stub_as_count)
     config = dict(beacons=beacons, geth=beacons, validator_clients=beacons * 3 // 2,
         keys_per_client=keys_per_client, active_validators=beacons * 3 // 2 * keys_per_client,
-        worker_cap=worker_cap, geth_cache_mib=GETH_CACHE_MIB,
+        worker_cap=worker_cap, geth_cache_mib=geth_cache_mib,
         geth_gomemlimit_mib=geth_gomemlimit_mib, genesis_delay_seconds=genesis_delay,
         local_accounts=accounts, stub_as_count=stub_as_count, beacon_peers=beacon_peers,
-        block_gas_limit=BLOCK_GAS_LIMIT, historic_states="all", image_override=image,
+        block_gas_limit=BLOCK_GAS_LIMIT, historic_states="all" if reconstruct_historic_states else "default", image_override=image,
         placements={name: asdict(p) for name, p in placements.items()},
         host_counts=counts)
     if lookingglass:
         config["lookingglass"] = dict(port=lookingglass_port, probe_peers=True)
-    if min(accounts, keys_per_client, worker_cap, geth_gomemlimit_mib, genesis_delay, beacon_peers) < 1 or accounts < 2:
+    if min(accounts, keys_per_client, worker_cap, geth_gomemlimit_mib, beacon_peers) < 1 or accounts < 2:
         raise ValueError("Counts/budgets must be positive and accounts >=2")
+    if type(genesis_delay) is not int or genesis_delay < 0:
+        raise ValueError("genesis_delay must be a non-negative integer")
+    if type(geth_cache_mib) is not int or geth_cache_mib < 0:
+        raise ValueError("geth_cache_mib must be a non-negative integer")
     output = Path(output).resolve()
     if dry_run:
         print(json.dumps(config, indent=2))
@@ -191,14 +215,17 @@ def run(output=SCRIPT_DIR / "output", beacons=100, stub_as_count=64,
     else:
         emu = mini_internet.build_emulator(stub_as_count=stub_as_count, host_counts=counts)
     add_ethereum_pos_layer(emu, placements, beacons, beacons, beacons * 3 // 2,
-                           beacon_peers, min(4, beacons), min(3, beacons), accounts)
+                           beacon_peers, min(4, beacons), min(3, beacons), accounts,
+                           keys_per_client=keys_per_client, worker_cap=worker_cap,
+                           geth_cache_mib=geth_cache_mib, geth_gomemlimit_mib=geth_gomemlimit_mib,
+                           genesis_delay=genesis_delay,
+                           reconstruct_historic_states=reconstruct_historic_states)
     emu.render()
     compiler = ChainSeedDocker(platform=Platform.AMD64, internetMapEnabled=False)
     if lookingglass:
         compiler.enableLookingglass("pos-large", port=lookingglass_port,
                                     run_dir=lookingglass_run_dir)
     if image:
-        from chainseed.common.systems import ETHEREUM_POS
         base = emu.getLayer("Base")
         for placement in placements.values():
             compiler.setImageOverride(base.getAutonomousSystem(placement.asn).getHost(placement.host), image)
@@ -219,6 +246,9 @@ def main():
     parser.add_argument("--accounts", type=int, default=1000)
     parser.add_argument("--keys-per-client", type=int, default=KEYS_PER_CLIENT)
     parser.add_argument("--worker-cap", type=int, default=WORKER_CAP)
+    parser.add_argument("--geth-cache-mib", type=int, default=GETH_CACHE_MIB)
+    parser.add_argument("--no-reconstruct-historic-states", dest="reconstruct_historic_states",
+                        action="store_false", help="Omit historical-state reconstruction on Beacon nodes")
     parser.add_argument("--geth-gomemlimit-mib", type=int, default=GETH_GOMEMLIMIT_MIB)
     parser.add_argument("--genesis-delay", type=int, default=GENESIS_DELAY_SECONDS)
     parser.add_argument("--beacon-peers", type=int, default=32)

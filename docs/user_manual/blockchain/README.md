@@ -14,6 +14,8 @@
   - [Use a server to share information among nodes](./info_server.md)
 
 
+  - [Configure individual Ethereum clients](./server_configuration.md)
+
 ## Advanced features 
 
   - [Use Chainlink to get information From outside](../../../examples/D31_chainlink)

@@ -22,8 +22,10 @@ The example reuses D01 to create:
 - the EthExplorer web, backend, and data services.
 
 EthExplorer selects one rendered `PoSGethServer` and one rendered
-`PoSBeaconServer` from the requested Ethereum chain. It uses the service
-types and chain name rather than container display-name patterns.
+`PoSBeaconServer` from the requested Ethereum chain. You can select them by
+virtual node name. Automatic selection chooses the first eligible rendered node
+in registry/ID order: Geth must have HTTP RPC enabled and Beacon must retain
+historical-state reconstruction. Display names are not used for selection.
 
 ## Compile and run
 
@@ -61,12 +63,37 @@ compiler to the ChainSeed component:
 emu.render()
 
 docker = ChainSeedDocker(internetMapEnabled=True, platform=platform)
-docker.enableEthExplorer(chain_name="pos", port=5000)
+docker.enableEthExplorer(
+    chain_name="pos", port=5000,
+    geth_vnode="gethnode1",
+    beacon_vnode="beaconnode1",
+)
 
 emu.compile(docker, output, override=True)
 ```
 
-The `--eth-explorer` and `--no-eth-explorer` command-line options control
+Omit either selector to choose that role automatically. Explicit selectors must
+name the correct Server role in the requested chain. Unknown names, wrong roles,
+other chains, disabled Geth HTTP RPC, or disabled Beacon historical reconstruction
+produce errors during compilation. Set Server options before `emu.render()`;
+the component does not change them.
+
+For a dedicated observer in your own topology:
+
+```python
+observer.setReconstructHistoricStates(True)
+# Other Beacon instances can call setReconstructHistoricStates(False).
+# Use observer's virtual node name as beacon_vnode when enabling EthExplorer.
+```
+
+D01 and D10 also accept selectors on the command line:
+
+```bash
+python examples/D10_eth_explorer/ethereum_pos.py \
+  --explorer-geth gethnode1 --explorer-beacon beaconnode1
+```
+
+In D01, the `--eth-explorer` and `--no-eth-explorer` command-line options control
 this step. The `--ether-view` names are also accepted as aliases.
 
 SeedEmu calls a protected additional-services hook while compiling Compose.
@@ -90,8 +117,8 @@ The data services share the Compose default network. The web and backend
 services also join the two emulated networks containing the selected Geth and
 Beacon nodes. Their addresses are provided as:
 
-- `EL_HOST`: selected Geth node address;
-- `CL_HOST`: selected Beacon node address.
+- `EL_HOST` / `EL_PORT`: selected Geth node address and configured HTTP RPC port;
+- `CL_HOST` / `CL_PORT`: selected Beacon node address and HTTP API port (currently 8000).
 
 The web UI is published at `http://127.0.0.1:5000`. The Internet Map remains
 available at `http://127.0.0.1:8080/map.html`.

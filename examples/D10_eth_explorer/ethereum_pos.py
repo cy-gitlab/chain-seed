@@ -27,6 +27,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--platform", choices=["amd", "arm"])
     parser.add_argument("--output", default=str(SCRIPT_DIR / "output"))
     parser.add_argument("--dumpfile")
+    parser.add_argument("--explorer-geth", help="Geth virtual node for EthExplorer (for example gethnode1)")
+    parser.add_argument("--explorer-beacon", help="Beacon virtual node for EthExplorer (for example beaconnode1)")
     parser.add_argument(
         "--beacon-nodes",
         type=int,
@@ -83,6 +85,8 @@ def run(
     platform=Platform.AMD64,
     override: bool = True,
     render: bool = True,
+    explorer_geth_vnode: str | None = None,
+    explorer_beacon_vnode: str | None = None,
 ):
     d01_ethereum_pos.run(
         dumpfile=dumpfile,
@@ -93,6 +97,8 @@ def run(
         override=override,
         render=render,
         ether_view_enabled=True,
+        explorer_geth_vnode=explorer_geth_vnode,
+        explorer_beacon_vnode=explorer_beacon_vnode,
     )
 
 
@@ -106,6 +112,8 @@ def main() -> int:
         platform=resolve_platform(args.platform),
         override=args.override,
         render=args.render,
+        explorer_geth_vnode=args.explorer_geth,
+        explorer_beacon_vnode=args.explorer_beacon,
     )
     return 0
 

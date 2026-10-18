@@ -12,6 +12,18 @@ python ethereum_large_scale.py
 ./up.sh
 ```
 
+Client options are set on individual Server instances in
+`ethereum_large_scale.py`. To change the example's common values from the command line:
+
+```bash
+python ethereum_large_scale.py --worker-cap 4 --geth-cache-mib 128 \
+  --geth-gomemlimit-mib 512 --keys-per-client 100 --genesis-delay 1800
+```
+
+Use `--no-reconstruct-historic-states` to omit historical-state reconstruction.
+See the [Server configuration API](../../../docs/user_manual/blockchain/server_configuration.md)
+for configuring individual clients differently.
+
 The generated deployment is saved in `output/`. To view container status:
 
 ```bash

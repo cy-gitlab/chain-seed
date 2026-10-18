@@ -3,20 +3,19 @@ while read -r node; do {{
     let count=0
     ok=true
     validator=false
-    until curl --http0.9 -sHf http://$node/testnet > /dev/null; do {{
+    until curl {curl_options}--http0.9 -fsS http://$node/testnet > /dev/null; do {{
         echo "eth: beacon-setup node $node not ready, waiting..."
-        sleep 10
+        sleep {retry_interval}
         let count++
-        [ $count -gt 60 ] && {{
-            echo "eth: connection to beacon-setup node $node failed too many times, skipping."
-            ok=false
-            break
+        [ $count -ge {retry_attempts} ] && {{
+            echo "eth: connection to beacon-setup node $node failed too many times."
+            exit 1
         }}
     }}; done
    
-        curl --http0.9 -s http://$node/testnet > /tmp/testnet.tar.gz
+        curl {curl_options}--http0.9 -fsS http://$node/testnet > /tmp/testnet.tar.gz || exit 1
         mkdir /tmp/bn
-        tar -xzvf /tmp/testnet.tar.gz -C /tmp/bn
+        tar -xzvf /tmp/testnet.tar.gz -C /tmp/bn || exit 1
 
         echo "[beacon_client] starting lighthouse beacon client"
         {bc_start_command}

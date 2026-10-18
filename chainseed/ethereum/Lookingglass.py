@@ -129,6 +129,8 @@ class Lookingglass:
                           "label": node.getDisplayName() or node.getName(),
                           "asn": str(node.getAsn()), "ip": str(interface.getAddress()),
                           "rpc_port": server.getGethHttpPort() if role == "geth" else 8000})
+            if role == "beacon":
+                nodes[-1]["metrics_port"] = server.getMetricsPort()
             target = (server.getConnectedGethIp() if role == "beacon" else
                       server.getConnectedBeaconIp() if role == "validator" else None)
             if target:

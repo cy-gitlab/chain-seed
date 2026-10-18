@@ -4,6 +4,7 @@ from chainseed.ethereum import *
 from .EthEnum import ConsensusMechanism, EthUnit
 from .EthUtil import Genesis, EthAccount, AccountStructure
 from .EthereumServer import EthereumServer, PoAServer, PoSBeaconServer, PoSBeaconSetupServer, PoSGethServer, PoWServer, PoSVcServer,PoSServer
+from .GethPeers import GethPeerConfig
 from os import mkdir, path, makedirs, rename
 from seedemu.core import Node, Service, Server, Emulator
 from seedemu.core.enums import NetworkType
@@ -60,6 +61,9 @@ class Blockchain:
         self._joined_signer_accounts = [] 
         self._validator_ids = [] 
         self._validator_withdraw_addresses = {}
+        self._validator_servers = {}
+        self._validator_key_ranges = {}
+        self._beacon_setup_server = None
         self._beacon_setup_node_address = ''  
 
         self._beacon_boot_node_address = []
@@ -111,6 +115,9 @@ class Blockchain:
         
         if self._consensus == ConsensusMechanism.POS:
             if isinstance(server, PoSBeaconSetupServer):
+                if self._beacon_setup_server is not None and self._beacon_setup_server is not server:
+                    raise ValueError("A PoS blockchain must have only one BeaconSetup server")
+                self._beacon_setup_server = server
                 self._beacon_setup_node_address = '{}:{}'.format(ifaces[0].getAddress(), server.getBeaconSetupHttpPort())
             # if server.isStartMiner():
             #     self._log('adding as{}/{} as consensus-{} miner...'.format(node.getAsn(), node.getName(), self._consensus.value))
@@ -133,11 +140,9 @@ class Blockchain:
                 vid = str(server.getId())
                 self._validator_ids.append(vid)
                 self._validator_withdraw_addresses[vid] = server.getWithdrawAddress()
+                self._validator_servers[vid] = server
 
     
-        server._generateGethStartCommand(str(ifaces[0].getAddress()))
-            
-
         if self._eth_service.isSave():
             save_path = self._eth_service.getSavePath()
             node.addSharedFolder('/root/.ethereum', '../{}/{}/{}/ethereum'.format(save_path, self._chain_name, server.getId()))
@@ -147,6 +152,14 @@ class Blockchain:
 
     def configure(self, emulator:Emulator):
         pending_targets = self._eth_service.getPendingTargets()
+        self._configureStaticPeers(emulator)
+        # Allocate once in logical registration order, before Service.render()
+        # installs any server. Both genesis and each VC consume these ranges.
+        first = 0
+        for vid in self._validator_ids:
+            count = self._validator_servers[vid].getValidatorKeyCount()
+            self._validator_key_ranges[vid] = (first, first + count)
+            first += count
         localAccounts = EthAccount.createLocalAccountsFromMnemonic(mnemonic=self._local_mnemonic, balance=self._local_account_balance, total=self._local_accounts_total)
         self._genesis.addAccounts(localAccounts)
         self._genesis.setChainId(self._chain_id)
@@ -182,16 +195,55 @@ class Blockchain:
                     if ip:
                         server.setConnectedGethIp(ip)
             elif isinstance(server, PoSVcServer):
+                if server.isValidatorAtGenesis() and server.isValidatorAtRunning():
+                    raise ValueError(f"{vnode}: choose either genesis or runtime validator initialization")
+                if not server.isValidatorAtGenesis() and server.getValidatorKeyCount() != 1:
+                    raise ValueError(f"{vnode}: setValidatorKeyCount requires enablePOSValidatorAtGenesis()")
                 beacon_vnode = server.getConnectBeaconVNode()
                 if beacon_vnode != '':
                     ip = self.__getIpByVnodeName(emulator, beacon_vnode)
                     if ip:
                         server.setConnectedBeaconIp(ip)
+            if isinstance(server, EthereumServer):
+                # All logical bindings and static peer identities are available
+                # before any client command is generated.
+                server._generateGethStartCommand(str(node.getInterfaces()[0].getAddress()))
             
         self._genesis.addAccounts(self.getAllAccounts())
         
         if self._consensus in [ConsensusMechanism.POA] :
             self._genesis.setSigner(self.getAllSignerAccounts())
+
+    def _configureStaticPeers(self, emulator: Emulator):
+        targets = self._eth_service.getPendingTargets()
+        plans = []
+        participants = set()
+        for vnode in self._pending_targets:
+            server = targets[vnode]
+            if not isinstance(server, GethPeerConfig) or server._static_peers is None:
+                continue
+            peers = []
+            for peer_name in server.getStaticPeers():
+                if peer_name == vnode:
+                    raise ValueError(f"{vnode}: cannot declare itself as a static peer")
+                peer = targets.get(peer_name)
+                if peer is None:
+                    raise ValueError(f"{vnode}: static peer {peer_name!r} does not exist")
+                if not isinstance(peer, GethPeerConfig):
+                    raise ValueError(f"{vnode}: static peer {peer_name!r} must be a Geth execution server")
+                if peer.getBlockchain() is not self:
+                    raise ValueError(f"{vnode}: static peer {peer_name!r} is not in the same blockchain")
+                peers.append(peer)
+                participants.add((peer_name, peer))
+            plans.append((server, peers))
+            participants.add((vnode, server))
+        for vnode, server in participants:
+            address = self.__getIpByVnodeName(emulator, vnode)
+            if address is None:
+                raise ValueError(f"{vnode}: static peers require an addressed local network interface")
+            server._resolveP2PIdentity(address)
+        for server, peers in plans:
+            server._static_peer_enodes = [peer.getP2PEnode() for peer in peers]
     
     def __getIpByVnodeName(self, emulator, nodename:str) -> str:
         node = emulator.getBindingFor(nodename)
@@ -258,6 +310,15 @@ class Blockchain:
 
     def getValidatorWithdrawAddress(self, validator_id: str) -> str:
         return self._validator_withdraw_addresses.get(str(validator_id), "")
+
+    def getValidatorKeyRange(self, validator_id: str):
+        """Return the derived half-open key range after configure()."""
+        return self._validator_key_ranges[str(validator_id)]
+
+    def getBeaconSetupServer(self) -> PoSBeaconSetupServer:
+        if self._beacon_setup_server is None:
+            raise ValueError("A PoS blockchain needs a BeaconSetup server")
+        return self._beacon_setup_server
 
     def getBeaconSetupNodeIp(self) -> str:
         """!
@@ -729,6 +790,40 @@ class EthereumService(Service):
         super().configure(emulator)
         for blockchain in self.__blockchains.values():
             blockchain.configure(emulator)
+        self._validateMetricsPorts(emulator)
+        for server in self._pending_targets.values():
+            if isinstance(server, EthereumServer):
+                server._freezeConfiguration()
+
+    def _validateMetricsPorts(self, emulator: Emulator):
+        endpoints = {}
+        metrics = []
+        for vnode, server in self._pending_targets.items():
+            if not isinstance(server, EthereumServer):
+                continue
+            node = emulator.getBindingFor(vnode)
+            ports = []
+            if isinstance(server, PoSGethServer):
+                ports += [30303, 8551]
+                if server._enable_http:
+                    ports.append(server.getGethHttpPort())
+                if server._enable_ws:
+                    ports.append(server.getGethWsPort())
+            elif isinstance(server, PoSBeaconServer):
+                ports += [8000, 9000]
+                if server._metrics_enabled:
+                    metrics.append((node, server._metrics_port, vnode))
+            elif isinstance(server, PoSBeaconSetupServer):
+                ports.append(server.getBeaconSetupHttpPort())
+            if server.isBootNode():
+                ports.append(server.getBootNodeHttpPort())
+            for port in ports:
+                endpoints.setdefault((node, port), vnode)
+        for node, port, vnode in metrics:
+            owner = endpoints.get((node, port))
+            if owner is not None:
+                raise ValueError(f"{vnode}: metrics port {port} conflicts with {owner} on the same host")
+            endpoints[(node, port)] = vnode
         
     def _createSharedFolder(self):
         if path.exists(self.__save_path):

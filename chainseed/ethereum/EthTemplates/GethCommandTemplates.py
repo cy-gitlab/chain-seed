@@ -9,6 +9,7 @@ geth --datadir {datadir} --identity="NODE_{node_id}" --networkid={chain_id} --sy
 {option[http]}\
 {option[ws]}\
 {option[pos]}\
+{option[custom]}\
 {option[unlock]}\
 {option[bootnode-start]}\
                             {option[mine]}'''

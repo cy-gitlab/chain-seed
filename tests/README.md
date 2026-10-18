@@ -24,6 +24,12 @@ source assets avoids the missing upstream wheel resources.
 Solana and Chainlink configurations, including a custom Geth binary.
 SeedEmu CI does not install or import ChainSeed.
 
+`test_ethereum_runtime_config.py` checks independent Server tuning through generated
+scripts, compiled Docker files and process arguments, plus genesis/VC key ranges.
+
+`test_ethereum_static_peers.py` checks logical Geth peers, client identity files,
+cross-AS enodes, dump reuse, legacy/PoS commands and invalid peer declarations.
+
 `test_example_network.py` checks mini/hybrid networks and `.bin` reuse.
 `check_repository_boundaries.py --seedemu ../seed-emulator` checks source
 ownership, removed API references, and Python syntax across both repositories.

@@ -40,6 +40,9 @@ class ChainSeedDocker(Docker):
         port: int = 5000,
         backend_image: str | None = None,
         web_image: str | None = None,
+        *,
+        geth_vnode: str | None = None,
+        beacon_vnode: str | None = None,
     ) -> "ChainSeedDocker":
         """Enable the ChainSeed EthExplorer deployment component."""
         from ..ethereum.EthExplorer import (
@@ -54,6 +57,8 @@ class ChainSeedDocker(Docker):
                 port=port,
                 backend_image=backend_image or ETH_EXPLORER_BACKEND_IMAGE,
                 web_image=web_image or ETH_EXPLORER_WEB_IMAGE,
+                geth_vnode=geth_vnode,
+                beacon_vnode=beacon_vnode,
             )
         )
 
